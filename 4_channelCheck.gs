@@ -37,9 +37,6 @@ function onOpen() {
   initializeDashboard();
 }
 
-/**
- * ユーザーインターフェースの構築
- */
 function createUserInterface() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu("YouTube分析")
@@ -58,14 +55,13 @@ function createUserInterface() {
         .addItem("🔀 トラフィックソース分析", "analyzeTrafficSources")
     )
     .addSeparator()
-    .addItem("🤖 AIによる改善提案を生成", "generateAIRecommendations")
+    .addItem("🤖 AIによる改善提案を生成", "generateAIRecommendrations")
     .addItem("📊 分析履歴を確認", "viewAnalysisHistory")
     .addSeparator()
     .addItem("🐞 トラブルシューティング", "troubleshootAPIs")
     .addItem("❓ ヘルプとガイド", "showHelp")
     .addToUi();
 
-  // API状態の表示を更新
   updateAPIStatus();
 }
 
@@ -268,6 +264,198 @@ function resetAudienceSheet() {
   }
 }
 
+
+/**
+ * ライブラリなしでのOAuth2実装（完全版）
+ */
+function getYouTubeOAuthService() {
+  return {
+    hasAccess: function() {
+      const token = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
+      const expiryTime = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN_EXPIRY");
+      
+      if (!token || !expiryTime) {
+        return false;
+      }
+      
+      const now = new Date().getTime();
+      const expiry = parseInt(expiryTime);
+      
+      // トークンの有効期限をチェック
+      if (now >= expiry) {
+        // 期限切れの場合、リフレッシュトークンで更新を試行
+        return this.refreshAccessToken();
+      }
+      
+      return true;
+    },
+    
+    getAccessToken: function() {
+      return PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
+    },
+    
+    getAuthorizationUrl: function() {
+      const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+      const redirectUri = 'urn:ietf:wg:oauth:2.0:oob';
+      const scope = [
+        'https://www.googleapis.com/auth/youtube.readonly',
+        'https://www.googleapis.com/auth/yt-analytics.readonly',
+        'https://www.googleapis.com/auth/yt-analytics-monetary.readonly'
+      ].join(' ');
+      
+      const state = Utilities.getUuid();
+      PropertiesService.getUserProperties().setProperty("OAUTH_STATE", state);
+      
+      return `https://accounts.google.com/o/oauth2/auth?` +
+             `client_id=${clientId}&` +
+             `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+             `scope=${encodeURIComponent(scope)}&` +
+             `response_type=code&` +
+             `access_type=offline&` +
+             `prompt=consent&` +
+             `state=${state}`;
+    },
+    
+    reset: function() {
+      PropertiesService.getUserProperties().deleteProperty("YT_ACCESS_TOKEN");
+      PropertiesService.getUserProperties().deleteProperty("YT_ACCESS_TOKEN_EXPIRY");
+      PropertiesService.getUserProperties().deleteProperty("YT_REFRESH_TOKEN");
+      PropertiesService.getUserProperties().deleteProperty("OAUTH_STATE");
+    },
+    
+    handleCallback: function(request) {
+      // 実装は簡略化（手動での認証コード入力方式）
+      return false;
+    },
+    
+    refreshAccessToken: function() {
+      const refreshToken = PropertiesService.getUserProperties().getProperty("YT_REFRESH_TOKEN");
+      const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+      const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
+      
+      if (!refreshToken || !clientId || !clientSecret) {
+        return false;
+      }
+      
+      try {
+        const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          payload: [
+            'grant_type=refresh_token',
+            `refresh_token=${refreshToken}`,
+            `client_id=${clientId}`,
+            `client_secret=${clientSecret}`
+          ].join('&')
+        });
+        
+        const data = JSON.parse(response.getContentText());
+        
+        if (data.access_token) {
+          const expiryTime = new Date().getTime() + (data.expires_in * 1000);
+          PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN", data.access_token);
+          PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN_EXPIRY", expiryTime.toString());
+          return true;
+        }
+      } catch (e) {
+        Logger.log('リフレッシュトークンエラー: ' + e.toString());
+      }
+      
+      return false;
+    }
+  };
+}
+
+/**
+ * 手動で認証コードを入力してトークンを取得
+ */
+function setupManualOAuth() {
+  const ui = SpreadsheetApp.getUi();
+  
+  // 1. Client IDとSecretの確認
+  const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+  const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
+  
+  if (!clientId || !clientSecret) {
+    ui.alert('エラー', 'OAuth Client IDとSecretを先に設定してください。', ui.ButtonSet.OK);
+    return;
+  }
+  
+  // 2. 認証URLを生成
+  const service = getYouTubeOAuthService();
+  const authUrl = service.getAuthorizationUrl();
+  
+  // 3. 認証URLを表示
+  const urlResponse = ui.alert(
+    'OAuth認証 - ステップ1',
+    '以下のURLをブラウザで開いて認証を行ってください：\n\n' + authUrl + '\n\n' +
+    '認証後に表示される認証コードをコピーして「OK」をクリックしてください。',
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  if (urlResponse !== ui.Button.OK) {
+    return;
+  }
+  
+  // 4. 認証コードを入力
+  const codeResponse = ui.prompt(
+    'OAuth認証 - ステップ2',
+    '認証コードを入力してください:',
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  if (codeResponse.getSelectedButton() !== ui.Button.OK) {
+    return;
+  }
+  
+  const authCode = codeResponse.getResponseText().trim();
+  
+  if (!authCode) {
+    ui.alert('エラー', '認証コードが入力されていません。', ui.ButtonSet.OK);
+    return;
+  }
+  
+  // 5. アクセストークンを取得
+  try {
+    const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      payload: [
+        'grant_type=authorization_code',
+        `code=${authCode}`,
+        `client_id=${clientId}`,
+        `client_secret=${clientSecret}`,
+        'redirect_uri=urn:ietf:wg:oauth:2.0:oob'
+      ].join('&'),
+      muteHttpExceptions: true
+    });
+    
+    const data = JSON.parse(response.getContentText());
+    
+    if (data.access_token) {
+      const expiryTime = new Date().getTime() + (data.expires_in * 1000);
+      PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN", data.access_token);
+      PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN_EXPIRY", expiryTime.toString());
+      
+      if (data.refresh_token) {
+        PropertiesService.getUserProperties().setProperty("YT_REFRESH_TOKEN", data.refresh_token);
+      }
+      
+      ui.alert('成功', 'OAuth認証が完了しました！', ui.ButtonSet.OK);
+      updateAPIStatus();
+    } else {
+      ui.alert('エラー', 'アクセストークンの取得に失敗しました: ' + response.getContentText(), ui.ButtonSet.OK);
+    }
+  } catch (e) {
+    ui.alert('エラー', 'OAuth認証中にエラーが発生しました: ' + e.toString(), ui.ButtonSet.OK);
+  }
+}
+
+
 /**
  * APIキーを設定するダイアログ
  */
@@ -332,26 +520,26 @@ function setupApiKey() {
 }
 
 /**
- * OAuth認証のセットアップ
- * このメソッドはYouTubeチャンネル所有者がより詳細な分析データを取得するためのものです
+ * OAuth認証のセットアップ（ライブラリなし版）
  */
 function setupOAuth() {
   const ui = SpreadsheetApp.getUi();
 
-  ui.alert(
+  const response = ui.alert(
     "OAuth認証の設定",
     "このステップではYouTube Analytics APIに接続するための認証を行います。\n\n" +
       "この認証はチャンネル所有者のみが実行可能で、詳細な分析データを取得するために必要です。\n\n" +
-      "「OK」をクリックすると認証プロセスが開始されます。",
+      "「OK」をクリックすると手動認証プロセスが開始されます。",
     ui.ButtonSet.OK_CANCEL
   );
 
-  // まず認証情報が設定されているか確認
-  const clientId =
-    PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
-  const clientSecret = PropertiesService.getScriptProperties().getProperty(
-    "OAUTH_CLIENT_SECRET"
-  );
+  if (response !== ui.Button.OK) {
+    return;
+  }
+
+  // 認証情報が設定されているか確認
+  const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+  const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
 
   if (!clientId || !clientSecret) {
     // 認証情報が設定されていない場合は設定画面を表示
@@ -366,41 +554,8 @@ function setupOAuth() {
     }
   }
 
-  // OAuth認証の実行
-  try {
-    const service = getYouTubeOAuthService();
-
-    // 既存のトークンをクリア（再認証のため）
-    service.reset();
-
-    // 認証URLを生成して表示
-    const authorizationUrl = service.getAuthorizationUrl();
-    const template = HtmlService.createTemplate(
-      "<p>YouTube Analytics APIに接続するには認証が必要です。</p>" +
-        '<p><a href="<?= authorizationUrl ?>" target="_blank">ここをクリックして認証を行ってください</a></p>' +
-        "<p>認証が完了したら、このウィンドウを閉じてスプレッドシートに戻ってください。</p>" +
-        "<p>※ブラウザでポップアップがブロックされている場合は許可してください。</p>" +
-        "<p>※「このアプリは確認されていません」という警告が表示された場合は、「詳細」→「〜に移動」を選択してください。</p>"
-    );
-    template.authorizationUrl = authorizationUrl;
-
-    const page = template
-      .evaluate()
-      .setWidth(450)
-      .setHeight(250)
-      .setSandboxMode(HtmlService.SandboxMode.IFRAME);
-
-    ui.showModalDialog(page, "YouTube API 認証");
-
-    // API状態表示を更新
-    updateAPIStatus();
-  } catch (e) {
-    ui.alert(
-      "エラー",
-      `認証の設定中にエラーが発生しました:\n${e.toString()}`,
-      ui.ButtonSet.OK
-    );
-  }
+  // 手動OAuth認証を実行
+  setupManualOAuth();
 }
 
 /**
@@ -465,67 +620,113 @@ function setupOAuthCredentials() {
 }
 
 /**
- * YouTube OAuth2サービスのインスタンスを取得
+ * YouTube OAuth2サービスのインスタンスを取得（ライブラリなし版）
  */
 function getYouTubeOAuthService() {
-  // スクリプトプロパティから認証情報を取得
-  const clientId =
-    PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
-  const clientSecret = PropertiesService.getScriptProperties().getProperty(
-    "OAUTH_CLIENT_SECRET"
-  );
-
-  // 認証情報が設定されていない場合は設定を促す
-  if (!clientId || !clientSecret) {
-    const ui = SpreadsheetApp.getUi();
-    const response = ui.alert(
-      "OAuth認証情報が未設定",
-      "OAuth認証を使用するには、Client IDとClient Secretを設定する必要があります。\n\n今すぐ設定しますか？",
-      ui.ButtonSet.YES_NO
-    );
-
-    if (response == ui.Button.YES) {
-      setupOAuthCredentials();
-    } else {
-      throw new Error("OAuth認証情報が設定されていません。");
+  return {
+    hasAccess: function() {
+      const token = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
+      const expiryTime = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN_EXPIRY");
+      
+      if (!token || !expiryTime) {
+        return false;
+      }
+      
+      const now = new Date().getTime();
+      const expiry = parseInt(expiryTime);
+      
+      // トークンの有効期限をチェック
+      if (now >= expiry) {
+        // 期限切れの場合、リフレッシュトークンで更新を試行
+        return this.refreshAccessToken();
+      }
+      
+      return true;
+    },
+    
+    getAccessToken: function() {
+      return PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
+    },
+    
+    getAuthorizationUrl: function() {
+      const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+      const redirectUri = 'urn:ietf:wg:oauth:2.0:oob';
+      const scope = [
+        'https://www.googleapis.com/auth/youtube.readonly',
+        'https://www.googleapis.com/auth/yt-analytics.readonly',
+        'https://www.googleapis.com/auth/yt-analytics-monetary.readonly'
+      ].join(' ');
+      
+      const state = Utilities.getUuid();
+      PropertiesService.getUserProperties().setProperty("OAUTH_STATE", state);
+      
+      return `https://accounts.google.com/o/oauth2/auth?` +
+             `client_id=${clientId}&` +
+             `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+             `scope=${encodeURIComponent(scope)}&` +
+             `response_type=code&` +
+             `access_type=offline&` +
+             `prompt=consent&` +
+             `state=${state}`;
+    },
+    
+    reset: function() {
+      PropertiesService.getUserProperties().deleteProperty("YT_ACCESS_TOKEN");
+      PropertiesService.getUserProperties().deleteProperty("YT_ACCESS_TOKEN_EXPIRY");
+      PropertiesService.getUserProperties().deleteProperty("YT_REFRESH_TOKEN");
+      PropertiesService.getUserProperties().deleteProperty("OAUTH_STATE");
+    },
+    
+    refreshAccessToken: function() {
+      const refreshToken = PropertiesService.getUserProperties().getProperty("YT_REFRESH_TOKEN");
+      const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+      const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
+      
+      if (!refreshToken || !clientId || !clientSecret) {
+        return false;
+      }
+      
+      try {
+        const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          payload: [
+            'grant_type=refresh_token',
+            `refresh_token=${refreshToken}`,
+            `client_id=${clientId}`,
+            `client_secret=${clientSecret}`
+          ].join('&'),
+          muteHttpExceptions: true
+        });
+        
+        const data = JSON.parse(response.getContentText());
+        
+        if (data.access_token) {
+          const expiryTime = new Date().getTime() + (data.expires_in * 1000);
+          PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN", data.access_token);
+          PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN_EXPIRY", expiryTime.toString());
+          return true;
+        }
+      } catch (e) {
+        Logger.log('リフレッシュトークンエラー: ' + e.toString());
+      }
+      
+      return false;
     }
-  }
-
-  return OAuth2.createService("youtube")
-    .setAuthorizationBaseUrl("https://accounts.google.com/o/oauth2/auth")
-    .setTokenUrl("https://oauth2.googleapis.com/token")
-    .setClientId(clientId)
-    .setClientSecret(clientSecret)
-    .setPropertyStore(PropertiesService.getUserProperties())
-    .setCache(CacheService.getUserCache())
-    .setScope([
-      "https://www.googleapis.com/auth/youtube.readonly",
-      "https://www.googleapis.com/auth/yt-analytics.readonly",
-      "https://www.googleapis.com/auth/yt-analytics-monetary.readonly",
-    ])
-    .setParam("access_type", "offline")
-    .setParam("prompt", "consent")
-    .setCallbackFunction("handleOAuthCallback");
+  };
 }
 
 /**
- * OAuth認証のコールバック処理
+ * OAuth認証のコールバック処理（ライブラリなし版）
  */
 function handleOAuthCallback(request) {
-  const service = getYouTubeOAuthService();
-  const isAuthorized = service.handleCallback(request);
-
-  if (isAuthorized) {
-    return HtmlService.createHtmlOutput(
-      "認証が完了しました。このタブを閉じてスプレッドシートに戻ってください。"
-    );
-  } else {
-    return HtmlService.createHtmlOutput(
-      "認証に失敗しました。もう一度お試しください。"
-    );
-  }
+  // 手動認証方式のため、常にfalseを返す
+  return HtmlService.createHtmlOutput(
+    "手動認証方式を使用しています。認証コードを手動で入力してください。"
+  );
 }
-
 /**
  * API認証状態の表示を更新
  */
