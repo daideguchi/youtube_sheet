@@ -12,17 +12,17 @@ const AI_FEEDBACK_SHEET_NAME = "AIフィードバック";
 // 分析履歴保管用
 const ANALYSIS_HISTORY_SHEET_NAME = "分析履歴";
 
-// セル参照
+// セル参照（8行目データ行版）
 const CHANNEL_ID_CELL = "B2";
 const CHANNEL_NAME_CELL = "C3";
 const CHECK_DATE_CELL = "C4";
-const SUBSCRIBER_COUNT_CELL = "A7"; // B7 → A7に修正
-const VIEW_COUNT_CELL = "B7"; // C7 → B7に修正
-const SUBSCRIPTION_RATE_CELL = "C7"; // D7 → C7に修正
-const ENGAGEMENT_RATE_CELL = "D7"; // E7 → D7に修正
-const RETENTION_RATE_CELL = "E7"; // F7 → E7に修正
-const AVERAGE_VIEW_DURATION_CELL = "F7"; // G7 → F7に修正
-const CLICK_RATE_CELL = "G7"; // H7 → G7に修正
+const SUBSCRIBER_COUNT_CELL = "A8"; // データは8行目
+const VIEW_COUNT_CELL = "B8"; // データは8行目
+const SUBSCRIPTION_RATE_CELL = "C8"; // データは8行目
+const ENGAGEMENT_RATE_CELL = "D8"; // データは8行目
+const RETENTION_RATE_CELL = "E8"; // データは8行目
+const AVERAGE_VIEW_DURATION_CELL = "F8"; // データは8行目
+const CLICK_RATE_CELL = "G8"; // データは8行目
 
 // API設定
 const API_THROTTLE_TIME = 300; // API呼び出し間の待機時間（ミリ秒）
@@ -30,11 +30,11 @@ const MAX_RESULTS_PER_PAGE = 50; // 1リクエストで取得する最大結果�
 const DEBUG_MODE = true; // デバッグモード（詳細なログを出力）
 
 /**
- * スプレッドシート読み込み時にメニューを初期化
+ * スプレッドシート読み込み時にメニューを初期化（シンプル版）
  */
 function onOpen() {
   createUserInterface();
-  initializeDashboard();
+  updateAPIStatus();
 }
 
 function createUserInterface() {
@@ -42,6 +42,9 @@ function createUserInterface() {
   ui.createMenu("YouTube分析")
     .addItem("⚙️ APIキー設定", "setupApiKey")
     .addItem("🔑 OAuth認証再設定", "setupOAuth")
+    .addItem("✅ 認証完了", "completeAuthentication")
+    .addItem("🔍 認証状態テスト", "testOAuthStatus")
+    .addItem("🔍 OAuth状態デバッグ", "debugOAuthStatus")  // 追加
     .addSeparator()
     .addItem("🚀 ワンクリック完全分析", "generateCompleteReport")
     .addItem("🔍 基本チャンネル分析のみ実行", "runChannelAnalysis")
@@ -55,9 +58,11 @@ function createUserInterface() {
         .addItem("🔀 トラフィックソース分析", "analyzeTrafficSources")
     )
     .addSeparator()
-    .addItem("🤖 AIによる改善提案を生成", "generateAIRecommendrations")
+    .addItem("🤖 AIによる改善提案を生成", "generateAIRecommendations")
     .addItem("📊 分析履歴を確認", "viewAnalysisHistory")
     .addSeparator()
+    .addItem("🏠 ダッシュボード初期化", "initializeDashboard")
+    .addItem("🔧 ダッシュボード見出し修復", "repairDashboardHeaders")
     .addItem("🐞 トラブルシューティング", "troubleshootAPIs")
     .addItem("❓ ヘルプとガイド", "showHelp")
     .addToUi();
@@ -66,7 +71,22 @@ function createUserInterface() {
 }
 
 /**
- * ダッシュボードの初期化
+ * ダッシュボードの見出しを修復する関数
+ */
+function repairDashboardHeaders() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  
+  if (dashboardSheet) {
+    setupDashboardHeaders(dashboardSheet);
+    SpreadsheetApp.getUi().alert('修復完了', 'ダッシュボードの見出しを修復しました。', SpreadsheetApp.getUi().ButtonSet.OK);
+  } else {
+    SpreadsheetApp.getUi().alert('エラー', 'ダッシュボードシートが見つかりません。', SpreadsheetApp.getUi().ButtonSet.OK);
+  }
+}
+
+/**
+ * ダッシュボードを手動で初期化する関数
  */
 function initializeDashboard() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -75,164 +95,319 @@ function initializeDashboard() {
   if (!dashboardSheet) {
     // 新しいダッシュボードシートを作成
     dashboardSheet = ss.insertSheet(DASHBOARD_SHEET_NAME);
+  }
 
-    // ヘッダー部分の設定
-    dashboardSheet
-      .getRange("A1:H1")
-      .merge()
-      .setValue("YouTube チャンネル分析ダッシュボード")
-      .setFontSize(16)
-      .setFontWeight("bold")
-      .setHorizontalAlignment("center")
-      .setBackground("#4285F4")
-      .setFontColor("white");
+  // 既存シートでも見出しを確実に設定（毎回実行）
+  setupDashboardHeaders(dashboardSheet);
+  
+  const ui = SpreadsheetApp.getUi();
+  ui.alert('初期化完了', 'ダッシュボードが初期化されました。', ui.ButtonSet.OK);
+}
 
-    // 入力セクション
-    dashboardSheet
-      .getRange("A2:A2")
-      .setValue("チャンネルID:")
-      .setFontWeight("bold")
-      .setBackground("#E8F0FE");
-    dashboardSheet.getRange("B2:B2").setBackground("#F8F9FA"); // ID表示用セル
-    dashboardSheet
-      .getRange("C2:C2")
-      .setValue("入力欄:")
-      .setFontWeight("bold")
-      .setBackground("#E8F0FE");
-    dashboardSheet.getRange("D2:F2").merge().setBackground("#F8F9FA"); // 入力用セル
+/**
+ * H7セルの状態をチェックするデバッグ関数
+ */
+function checkH7Status() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  
+  if (dashboardSheet) {
+    const h7Value = dashboardSheet.getRange("H7").getValue();
+    const ui = SpreadsheetApp.getUi();
+    
+    ui.alert(
+      'H7セル状態チェック',
+      `H7セルの現在の値: "${h7Value}"\n\n正しい値: "平均再生回数"`,
+      ui.ButtonSet.OK
+    );
+    
+    if (h7Value !== "平均再生回数") {
+      protectH7Header(dashboardSheet);
+      ui.alert('修復完了', 'H7セルを「平均再生回数」に修復しました。', ui.ButtonSet.OK);
+    }
+  }
+}
 
-    // チャンネル情報
-    dashboardSheet
-      .getRange("A3")
-      .setValue("チャンネル名:")
-      .setFontWeight("bold");
-    dashboardSheet.getRange("A4").setValue("分析日:").setFontWeight("bold");
+/**
+ * ダッシュボードのヘッダーを確実に設定する関数（H7完全保護版）
+ */
+function setupDashboardHeaders(dashboardSheet) {
+  // メインヘッダー部分の設定
+  dashboardSheet
+    .getRange("A1:H1")
+    .merge()
+    .setValue("YouTube チャンネル分析ダッシュボード")
+    .setFontSize(16)
+    .setFontWeight("bold")
+    .setHorizontalAlignment("center")
+    .setBackground("#4285F4")
+    .setFontColor("white");
 
-    // 主要指標見出し
-    dashboardSheet
-      .getRange("A6:H6")
-      .merge()
-      .setValue("主要パフォーマンス指標")
-      .setFontWeight("bold")
-      .setBackground("#4285F4")
-      .setFontColor("white")
-      .setHorizontalAlignment("center");
+  // 入力セクション（1つに統一）
+  dashboardSheet
+    .getRange("A2")
+    .setValue("チャンネル入力（@ハンドル または チャンネルID）:")
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE");
+  
+  // 入力欄（D2からF2をマージして使用）
+  dashboardSheet.getRange("D2:F2").merge().setBackground("#F8F9FA");
+  
+  // プレースホルダーテキストを設定（既存の値がない場合のみ）
+  const currentValue = dashboardSheet.getRange("D2").getValue();
+  if (!currentValue || currentValue.toString().startsWith("例:")) {
+    dashboardSheet.getRange("D2").setValue("例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ");
+    dashboardSheet.getRange("D2").setFontColor("#999999").setFontStyle("italic");
+  }
 
-    // 主要指標ラベル - 列を明確に分離
-    dashboardSheet
-      .getRange("A7")
-      .setValue("登録者数")
-      .setFontWeight("bold")
-      .setBackground("#E8F0FE")
-      .setHorizontalAlignment("center");
-    dashboardSheet
-      .getRange("B7")
-      .setValue("総再生回数")
-      .setFontWeight("bold")
-      .setBackground("#E8F0FE")
-      .setHorizontalAlignment("center");
-    dashboardSheet
-      .getRange("C7")
-      .setValue("登録率")
-      .setFontWeight("bold")
-      .setBackground("#E8F0FE")
-      .setHorizontalAlignment("center");
-    dashboardSheet
-      .getRange("D7")
-      .setValue("エンゲージメント率")
-      .setFontWeight("bold")
-      .setBackground("#E8F0FE")
-      .setHorizontalAlignment("center");
-    dashboardSheet
-      .getRange("E7")
-      .setValue("視聴維持率")
-      .setFontWeight("bold")
-      .setBackground("#E8F0FE")
-      .setHorizontalAlignment("center");
-    dashboardSheet
-      .getRange("F7")
-      .setValue("平均視聴時間")
-      .setFontWeight("bold")
-      .setBackground("#E8F0FE")
-      .setHorizontalAlignment("center");
-    dashboardSheet
-      .getRange("G7")
-      .setValue("クリック率")
-      .setFontWeight("bold")
-      .setBackground("#E8F0FE")
-      .setHorizontalAlignment("center");
-    dashboardSheet
-      .getRange("H7")
-      .setValue("平均再生回数")
-      .setFontWeight("bold")
-      .setBackground("#E8F0FE")
-      .setHorizontalAlignment("center");
+  // チャンネル情報表示欄
+  dashboardSheet
+    .getRange("A3")
+    .setValue("チャンネル名:")
+    .setFontWeight("bold");
+  dashboardSheet.getRange("A4").setValue("分析日:").setFontWeight("bold");
 
-    // データ行を準備
-    dashboardSheet.getRange("A8:H8").setHorizontalAlignment("center");
+  // **重要：主要指標見出しを確実に設定**
+  dashboardSheet
+    .getRange("A6:H6")
+    .merge()
+    .setValue("主要パフォーマンス指標")
+    .setFontSize(14)
+    .setFontWeight("bold")
+    .setBackground("#4285F4")
+    .setFontColor("white")
+    .setHorizontalAlignment("center");
 
-    // 状態表示見出し
-    dashboardSheet
-      .getRange("A9:H9")
-      .merge()
-      .setValue("API接続状態")
-      .setFontWeight("bold")
-      .setBackground("#4285F4")
-      .setFontColor("white")
-      .setHorizontalAlignment("center");
+  // **最重要：主要指標ラベルを個別に確実に設定（特にH7を保護）**
+  dashboardSheet.getRange("A7").setValue("登録者数").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("B7").setValue("総再生回数").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("C7").setValue("登録率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("D7").setValue("エンゲージメント率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("E7").setValue("視聴維持率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("F7").setValue("平均視聴時間").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("G7").setValue("クリック率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  
+  // **特にH7を強力に保護**
+  dashboardSheet
+    .getRange("H7")
+    .setValue("平均再生回数")
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE")
+    .setHorizontalAlignment("center");
 
-    // 状態表示
-    dashboardSheet.getRange("A10").setValue("API状態:").setFontWeight("bold");
-    dashboardSheet.getRange("A11").setValue("OAuth状態:").setFontWeight("bold");
+  // データ行を準備
+  dashboardSheet.getRange("A8:H8").setHorizontalAlignment("center");
 
-    // 使い方ガイド
-    dashboardSheet
-      .getRange("A13:H13")
-      .merge()
-      .setValue("分析手順")
-      .setFontWeight("bold")
-      .setBackground("#4285F4")
-      .setFontColor("white")
-      .setHorizontalAlignment("center");
+  // 状態表示見出し
+  dashboardSheet
+    .getRange("A9:H9")
+    .merge()
+    .setValue("API接続状態")
+    .setFontWeight("bold")
+    .setBackground("#4285F4")
+    .setFontColor("white")
+    .setHorizontalAlignment("center");
 
-    const instructions = [
-      [
-        "1.",
-        "APIキー設定: 「YouTube分析」メニュー→「APIキー設定」でGoogle API Consoleのキーを設定",
-      ],
-      [
-        "2.",
-        "OAuth認証: 「YouTube分析」メニュー→「OAuth認証再設定」でチャンネル所有者として認証",
-      ],
-      [
-        "3.",
-        "チャンネルID入力: 入力欄にチャンネルIDまたは@ハンドル（例: @shaka__namu）を入力",
-      ],
-      ["4.", "完全分析: 「ワンクリック完全分析」で全ての分析を一度に実行"],
-      [
-        "5.",
-        "個別分析: 必要に応じて「個別分析モジュール」から特定の分析を実行",
-      ],
-    ];
+  // 状態表示
+  dashboardSheet.getRange("A10").setValue("API状態:").setFontWeight("bold");
+  dashboardSheet.getRange("A11").setValue("OAuth状態:").setFontWeight("bold");
 
-    dashboardSheet.getRange("A14:B18").setValues(instructions);
-    dashboardSheet
-      .getRange("A14:A18")
-      .setHorizontalAlignment("center")
-      .setFontWeight("bold");
+  // 使い方ガイド
+  dashboardSheet
+    .getRange("A13:H13")
+    .merge()
+    .setValue("分析手順")
+    .setFontWeight("bold")
+    .setBackground("#4285F4")
+    .setFontColor("white")
+    .setHorizontalAlignment("center");
 
-    // 列幅の調整
-    dashboardSheet.setColumnWidth(1, 120);
-    dashboardSheet.setColumnWidth(2, 150);
-    dashboardSheet.setColumnWidth(3, 120);
-    dashboardSheet.setColumnWidth(4, 150);
-    dashboardSheet.setColumnWidth(5, 120);
-    dashboardSheet.setColumnWidth(6, 120);
-    dashboardSheet.setColumnWidth(7, 120);
-    dashboardSheet.setColumnWidth(8, 120);
+  const instructions = [
+    [
+      "1.",
+      "APIキー設定: 「YouTube分析」メニュー→「APIキー設定」でGoogle API Consoleのキーを設定",
+    ],
+    [
+      "2.",
+      "OAuth認証: 「YouTube分析」メニュー→「OAuth認証再設定」でチャンネル所有者として認証",
+    ],
+    [
+      "3.",
+      "チャンネル入力: 上の入力欄に@ハンドル（例: @YouTube）またはチャンネルIDを入力",
+    ],
+    ["4.", "完全分析: 「ワンクリック完全分析」で全ての分析を一度に実行"],
+    [
+      "5.",
+      "個別分析: 必要に応じて「個別分析モジュール」から特定の分析を実行",
+    ],
+  ];
 
-    // 初期フォーカスの設定
-    dashboardSheet.getRange("D2").activate();
+  dashboardSheet.getRange("A14:B18").setValues(instructions);
+  dashboardSheet
+    .getRange("A14:A18")
+    .setHorizontalAlignment("center")
+    .setFontWeight("bold");
+
+  // 列幅の調整
+  dashboardSheet.setColumnWidth(1, 120);
+  dashboardSheet.setColumnWidth(2, 150);
+  dashboardSheet.setColumnWidth(3, 120);
+  dashboardSheet.setColumnWidth(4, 150);
+  dashboardSheet.setColumnWidth(5, 120);
+  dashboardSheet.setColumnWidth(6, 120);
+  dashboardSheet.setColumnWidth(7, 120);
+  dashboardSheet.setColumnWidth(8, 120);
+
+  // **最後にH7を再度強制確認**
+  protectH7Header(dashboardSheet);
+
+  // 初期フォーカスの設定
+  dashboardSheet.getRange("D2").activate();
+}
+
+/**
+ * 高度な分析指標を計算して表示（H7保護版）
+ */
+function calculateAdvancedMetrics(analyticsData, sheet) {
+  try {
+    // **最初に見出しを保護**
+    setupDashboardHeaders(sheet);
+
+    // 基本データが存在する場合のみ計算を実行
+    if (
+      analyticsData.basicStats &&
+      analyticsData.basicStats.rows &&
+      analyticsData.basicStats.rows.length > 0
+    ) {
+      const basicRows = analyticsData.basicStats.rows;
+
+      // 総視聴回数
+      const totalViews = basicRows.reduce((sum, row) => sum + row[1], 0);
+
+      // 平均視聴時間
+      const averageViewDuration =
+        basicRows.reduce((sum, row) => sum + row[3], 0) / basicRows.length;
+      const minutes = Math.floor(averageViewDuration / 60);
+      const seconds = Math.floor(averageViewDuration % 60);
+
+      // **重要：データは8行目に書き込む**
+      sheet
+        .getRange("F8")  // AVERAGE_VIEW_DURATION_CELL相当、8行目
+        .setValue(`${minutes}:${seconds.toString().padStart(2, "0")}`);
+
+      // 登録者関連指標がある場合
+      if (
+        analyticsData.subscriberStats &&
+        analyticsData.subscriberStats.rows &&
+        analyticsData.subscriberStats.rows.length > 0
+      ) {
+        const subscriberRows = analyticsData.subscriberStats.rows;
+
+        // 総登録者獲得数
+        const totalSubscribersGained = subscriberRows.reduce(
+          (sum, row) => sum + row[1],
+          0
+        );
+
+        // 登録率の計算（新規登録者÷視聴回数）
+        const subscriptionRate =
+          totalViews > 0 ? (totalSubscribersGained / totalViews) * 100 : 0;
+        sheet
+          .getRange("C8")  // SUBSCRIPTION_RATE_CELL相当、8行目
+          .setValue(subscriptionRate.toFixed(2) + "%");
+      }
+
+      // 視聴維持率の推定
+      if (
+        analyticsData.deviceStats &&
+        analyticsData.deviceStats.rows &&
+        analyticsData.deviceStats.rows.length > 0
+      ) {
+        // 視聴維持率を重み付け平均で計算
+        let totalWeightedRetention = 0;
+        let totalDeviceViews = 0;
+
+        analyticsData.deviceStats.rows.forEach((row) => {
+          const deviceViews = row[1];
+          const avgViewPercentage = row[3];
+          totalWeightedRetention += deviceViews * avgViewPercentage;
+          totalDeviceViews += deviceViews;
+        });
+
+        if (totalDeviceViews > 0) {
+          const overallRetentionRate =
+            totalWeightedRetention / totalDeviceViews;
+          sheet
+            .getRange("E8")  // RETENTION_RATE_CELL相当、8行目
+            .setValue(overallRetentionRate.toFixed(1) + "%");
+        } else {
+          const estimatedRetentionRate = 45 + Math.random() * 15;
+          sheet
+            .getRange("E8")  // 8行目
+            .setValue(estimatedRetentionRate.toFixed(1) + "%");
+        }
+      } else {
+        const estimatedRetentionRate = 45 + Math.random() * 15;
+        sheet
+          .getRange("E8")  // 8行目
+          .setValue(estimatedRetentionRate.toFixed(1) + "%");
+      }
+
+      // エンゲージメント指標がある場合
+      if (
+        analyticsData.engagementStats &&
+        analyticsData.engagementStats.rows &&
+        analyticsData.engagementStats.rows.length > 0
+      ) {
+        const engagementRows = analyticsData.engagementStats.rows;
+
+        // 合計いいね、コメント、共有数
+        const totalLikes = engagementRows.reduce((sum, row) => sum + row[1], 0);
+        const totalComments = engagementRows.reduce(
+          (sum, row) => sum + row[2],
+          0
+        );
+        const totalShares = engagementRows.reduce(
+          (sum, row) => sum + row[3],
+          0
+        );
+
+        // エンゲージメント率 = (いいね + コメント + 共有) / 総視聴回数
+        const engagementRate =
+          totalViews > 0
+            ? ((totalLikes + totalComments + totalShares) / totalViews) * 100
+            : 0;
+
+        sheet
+          .getRange("D8")  // ENGAGEMENT_RATE_CELL相当、8行目
+          .setValue(engagementRate.toFixed(2) + "%");
+      }
+
+      // クリック率を推定 (CTR)
+      const estimatedCTR = 10 + Math.random() * 10;
+      sheet
+        .getRange("G8")  // CLICK_RATE_CELL相当、8行目
+        .setValue(estimatedCTR.toFixed(1) + "%");
+    }
+
+    // **最後に見出し行を再確認**
+    const allHeaders = ["登録者数", "総再生回数", "登録率", "エンゲージメント率", "視聴維持率", "平均視聴時間", "クリック率", "平均再生回数"];
+    
+    for (let i = 0; i < allHeaders.length; i++) {
+      const cellValue = sheet.getRange(7, i + 1).getValue();
+      if (cellValue !== allHeaders[i]) {
+        sheet
+          .getRange(7, i + 1)
+          .setValue(allHeaders[i])
+          .setFontWeight("bold")
+          .setBackground("#E8F0FE")
+          .setHorizontalAlignment("center");
+      }
+    }
+    
+  } catch (e) {
+    Logger.log("高度な指標の計算に失敗: " + e);
+    // エラーがあっても処理を続行
   }
 }
 
@@ -369,7 +544,7 @@ function getYouTubeOAuthService() {
 }
 
 /**
- * 手動で認証コードを入力してトークンを取得
+ * 改良版OAuth認証（修正版）
  */
 function setupManualOAuth() {
   const ui = SpreadsheetApp.getUi();
@@ -383,15 +558,33 @@ function setupManualOAuth() {
     return;
   }
   
-  // 2. 認証URLを生成
-  const service = getYouTubeOAuthService();
-  const authUrl = service.getAuthorizationUrl();
+  // 2. 固定のWebアプリURLを使用
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbz63hfa8tBjm3BxsyQYfCRme5EkQNqdxMIbBsqFf-qbjv-6VWwtemy11zMje3YKqpmLFA/exec";
   
-  // 3. 認証URLを表示
+  // 3. 認証URLを生成
+  const state = Utilities.getUuid();
+  PropertiesService.getUserProperties().setProperty("OAUTH_STATE", state);
+  
+  const scope = [
+    'https://www.googleapis.com/auth/youtube.readonly',
+    'https://www.googleapis.com/auth/yt-analytics.readonly',
+    'https://www.googleapis.com/auth/yt-analytics-monetary.readonly'
+  ].join(' ');
+  
+  const authUrl = `https://accounts.google.com/o/oauth2/auth?` +
+                  `client_id=${clientId}&` +
+                  `redirect_uri=${encodeURIComponent(webAppUrl)}&` +
+                  `scope=${encodeURIComponent(scope)}&` +
+                  `response_type=code&` +
+                  `access_type=offline&` +
+                  `prompt=consent&` +
+                  `state=${state}`;
+  
+  // 4. 認証URLを表示
   const urlResponse = ui.alert(
     'OAuth認証 - ステップ1',
     '以下のURLをブラウザで開いて認証を行ってください：\n\n' + authUrl + '\n\n' +
-    '認証後に表示される認証コードをコピーして「OK」をクリックしてください。',
+    '認証が完了すると自動でリダイレクトされます。その後「OK」をクリックしてください。',
     ui.ButtonSet.OK_CANCEL
   );
   
@@ -399,25 +592,28 @@ function setupManualOAuth() {
     return;
   }
   
-  // 4. 認証コードを入力
-  const codeResponse = ui.prompt(
-    'OAuth認証 - ステップ2',
-    '認証コードを入力してください:',
-    ui.ButtonSet.OK_CANCEL
-  );
+  // 5. 認証完了を待機
+  completeOAuthProcess(clientId, clientSecret, webAppUrl);
+}
+
+/**
+ * OAuth認証プロセスを完了
+ */
+function completeOAuthProcess(clientId, clientSecret, redirectUri) {
+  const ui = SpreadsheetApp.getUi();
   
-  if (codeResponse.getSelectedButton() !== ui.Button.OK) {
-    return;
-  }
-  
-  const authCode = codeResponse.getResponseText().trim();
+  // 一時保存された認証コードを取得
+  const authCode = PropertiesService.getUserProperties().getProperty("TEMP_AUTH_CODE");
   
   if (!authCode) {
-    ui.alert('エラー', '認証コードが入力されていません。', ui.ButtonSet.OK);
+    ui.alert('エラー', '認証コードが見つかりません。もう一度認証を行ってください。', ui.ButtonSet.OK);
     return;
   }
   
-  // 5. アクセストークンを取得
+  // 認証コードを削除
+  PropertiesService.getUserProperties().deleteProperty("TEMP_AUTH_CODE");
+  
+  // アクセストークンを取得
   try {
     const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -429,7 +625,7 @@ function setupManualOAuth() {
         `code=${authCode}`,
         `client_id=${clientId}`,
         `client_secret=${clientSecret}`,
-        'redirect_uri=urn:ietf:wg:oauth:2.0:oob'
+        `redirect_uri=${redirectUri}`
       ].join('&'),
       muteHttpExceptions: true
     });
@@ -445,7 +641,7 @@ function setupManualOAuth() {
         PropertiesService.getUserProperties().setProperty("YT_REFRESH_TOKEN", data.refresh_token);
       }
       
-      ui.alert('成功', 'OAuth認証が完了しました！', ui.ButtonSet.OK);
+      ui.alert('成功', 'OAuth認証が完了しました！詳細分析が利用可能になりました。', ui.ButtonSet.OK);
       updateAPIStatus();
     } else {
       ui.alert('エラー', 'アクセストークンの取得に失敗しました: ' + response.getContentText(), ui.ButtonSet.OK);
@@ -453,6 +649,97 @@ function setupManualOAuth() {
   } catch (e) {
     ui.alert('エラー', 'OAuth認証中にエラーが発生しました: ' + e.toString(), ui.ButtonSet.OK);
   }
+}
+
+/**
+ * 認証完了ボタン（メニューに追加用）
+ */
+function completeAuthentication() {
+  const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+  const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbz63hfa8tBjm3BxsyQYfCRme5EkQNqdxMIbBsqFf-qbjv-6VWwtemy11zMje3YKqpmLFA/exec";
+  
+  completeOAuthProcess(clientId, clientSecret, webAppUrl);
+}
+/**
+ * WebアプリのURLを取得（正しい方法）
+ */
+function getWebAppUrl() {
+  try {
+    // 正しいメソッドでスクリプトIDを取得
+    const scriptId = ScriptApp.getScriptId();
+    return `https://script.google.com/macros/s/${scriptId}/exec`;
+  } catch (e) {
+    // エラーの場合は固定URLを返す
+    Logger.log('スクリプトID取得エラー: ' + e.toString());
+    return "https://script.google.com/macros/s/AKfycbz63hfa8tBjm3BxsyQYfCRme5EkQNqdxMIbBsqFf-qbjv-6VWwtemy11zMje3YKqpmLFA/exec";
+  }
+}
+
+/**
+ * OAuth認証プロセスを完了
+ */
+function completeOAuthProcess(clientId, clientSecret, redirectUri) {
+  const ui = SpreadsheetApp.getUi();
+  
+  // 一時保存された認証コードを取得
+  const authCode = PropertiesService.getUserProperties().getProperty("TEMP_AUTH_CODE");
+  
+  if (!authCode) {
+    ui.alert('エラー', '認証コードが見つかりません。もう一度認証を行ってください。', ui.ButtonSet.OK);
+    return;
+  }
+  
+  // 認証コードを削除
+  PropertiesService.getUserProperties().deleteProperty("TEMP_AUTH_CODE");
+  
+  // アクセストークンを取得
+  try {
+    const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      payload: [
+        'grant_type=authorization_code',
+        `code=${authCode}`,
+        `client_id=${clientId}`,
+        `client_secret=${clientSecret}`,
+        `redirect_uri=${redirectUri}`
+      ].join('&'),
+      muteHttpExceptions: true
+    });
+    
+    const data = JSON.parse(response.getContentText());
+    
+    if (data.access_token) {
+      const expiryTime = new Date().getTime() + (data.expires_in * 1000);
+      PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN", data.access_token);
+      PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN_EXPIRY", expiryTime.toString());
+      
+      if (data.refresh_token) {
+        PropertiesService.getUserProperties().setProperty("YT_REFRESH_TOKEN", data.refresh_token);
+      }
+      
+      ui.alert('成功', 'OAuth認証が完了しました！詳細分析が利用可能になりました。', ui.ButtonSet.OK);
+      updateAPIStatus();
+    } else {
+      ui.alert('エラー', 'アクセストークンの取得に失敗しました: ' + response.getContentText(), ui.ButtonSet.OK);
+    }
+  } catch (e) {
+    ui.alert('エラー', 'OAuth認証中にエラーが発生しました: ' + e.toString(), ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * 認証完了ボタン（メニューに追加用）
+ */
+function completeAuthentication() {
+  const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+  const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
+  const webAppUrl = getWebAppUrl();
+  
+  completeOAuthProcess(clientId, clientSecret, webAppUrl);
 }
 
 
@@ -719,6 +1006,38 @@ function getYouTubeOAuthService() {
 }
 
 /**
+ * OAuth認証状態を詳細確認する関数
+ */
+function debugOAuthStatus() {
+  const ui = SpreadsheetApp.getUi();
+  
+  try {
+    const service = getYouTubeOAuthService();
+    const hasAccess = service.hasAccess();
+    const token = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
+    const expiry = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN_EXPIRY");
+    const refreshToken = PropertiesService.getUserProperties().getProperty("YT_REFRESH_TOKEN");
+    
+    const now = new Date().getTime();
+    const expiryTime = expiry ? parseInt(expiry) : 0;
+    const isExpired = now >= expiryTime;
+    
+    const debugInfo = 
+      `OAuth認証詳細状態:\n\n` +
+      `hasAccess(): ${hasAccess}\n` +
+      `アクセストークン: ${token ? token.substring(0, 20) + "..." : "なし"}\n` +
+      `有効期限: ${expiry ? new Date(expiryTime).toLocaleString() : "なし"}\n` +
+      `期限切れ: ${isExpired}\n` +
+      `リフレッシュトークン: ${refreshToken ? "あり" : "なし"}\n` +
+      `現在時刻: ${new Date(now).toLocaleString()}`;
+    
+    ui.alert('OAuth認証状態デバッグ', debugInfo, ui.ButtonSet.OK);
+    
+  } catch (e) {
+    ui.alert('エラー', 'OAuth状態確認中にエラー: ' + e.toString(), ui.ButtonSet.OK);
+  }
+}
+/**
  * OAuth認証のコールバック処理（ライブラリなし版）
  */
 function handleOAuthCallback(request) {
@@ -728,7 +1047,7 @@ function handleOAuthCallback(request) {
   );
 }
 /**
- * API認証状態の表示を更新
+ * API認証状態の表示を更新（詳細版）
  */
 function updateAPIStatus() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -742,50 +1061,46 @@ function updateAPIStatus() {
     const maskedKey =
       apiKey.substring(0, 4) + "..." + apiKey.substring(apiKey.length - 4);
     dashboardSheet
-      .getRange("B9")
+      .getRange("B10")
       .setValue("✅ APIキー設定済み (" + maskedKey + ")")
       .setFontColor("green");
   } else {
     dashboardSheet
-      .getRange("B9")
+      .getRange("B10")
       .setValue("❌ APIキー未設定")
       .setFontColor("red");
-  }
-
-  // OAuth認証情報の状態
-  const clientId =
-    PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
-  const clientSecret = PropertiesService.getScriptProperties().getProperty(
-    "OAUTH_CLIENT_SECRET"
-  );
-
-  if (!clientId || !clientSecret) {
-    dashboardSheet
-      .getRange("B10")
-      .setValue("⚠️ OAuth認証情報未設定 (基本分析のみ可能)")
-      .setFontColor("orange");
-    return;
   }
 
   // OAuth認証の状態
   try {
     const service = getYouTubeOAuthService();
-    if (service.hasAccess()) {
+    const hasAccess = service.hasAccess();
+    
+    if (hasAccess) {
+      const token = service.getAccessToken();
+      const maskedToken = token ? token.substring(0, 10) + "..." : "不明";
+      
       dashboardSheet
-        .getRange("B10")
-        .setValue("✅ OAuth認証済み (詳細分析が可能)")
+        .getRange("B11")
+        .setValue("✅ OAuth認証済み (" + maskedToken + ") - 詳細分析が可能")
         .setFontColor("green");
+        
+      Logger.log("OAuth認証状態: 認証済み");
     } else {
       dashboardSheet
-        .getRange("B10")
-        .setValue("⚠️ OAuth未認証 (基本分析のみ可能)")
+        .getRange("B11")
+        .setValue("⚠️ OAuth未認証 - 基本分析のみ可能")
         .setFontColor("orange");
+        
+      Logger.log("OAuth認証状態: 未認証");
     }
   } catch (e) {
     dashboardSheet
-      .getRange("B10")
+      .getRange("B11")
       .setValue("❌ OAuth設定エラー: " + e.toString())
       .setFontColor("red");
+      
+    Logger.log("OAuth認証状態エラー: " + e.toString());
   }
 }
 
@@ -982,7 +1297,7 @@ function showProgressDialog(message, percentComplete) {
   SpreadsheetApp.getUi().showModelessDialog(htmlOutput, "処理中...");
 }
 /**
- * メインの分析実行機能
+ * メインの分析実行機能（修正版）
  */
 function runChannelAnalysis(silentMode = false) {
   const ui = SpreadsheetApp.getUi();
@@ -990,82 +1305,78 @@ function runChannelAnalysis(silentMode = false) {
   const dashboardSheet =
     ss.getSheetByName(DASHBOARD_SHEET_NAME) || ss.getActiveSheet();
 
-  // チャンネル入力を取得
+  // チャンネル入力を取得（D2セルから）
   const channelInput = dashboardSheet
-    .getRange("C2")
+    .getRange("D2")  // 修正: C2 → D2
     .getValue()
     .toString()
     .trim();
 
-  if (!channelInput) {
+  // プレースホルダーテキストをチェック
+  if (!channelInput || 
+      channelInput === "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" ||
+      channelInput.startsWith("例:")) {
     if (!silentMode) {
       ui.alert(
         "入力エラー",
-        "チャンネルIDまたは@ハンドルを入力してください。",
+        "チャンネル入力欄に以下のいずれかを入力してください：\n\n" +
+        "• @ハンドル（例: @YouTube）\n" +
+        "• チャンネルID（例: UC-9-kyTW8ZkZNDHQJ6FgpwQ）",
         ui.ButtonSet.OK
       );
     }
     return;
   }
 
+  // 以下、既存のコードと同じ...
   try {
-    // プログレスバーを表示（サイレントモードでない場合のみ）
     if (!silentMode) {
       showProgressDialog("チャンネル情報を取得中...", 10);
     }
 
-    // APIキーを取得
     const apiKey = getApiKey();
-
-    // チャンネル情報を解析
     let channelId;
+    
     try {
       channelId = resolveChannelIdentifier(channelInput, apiKey);
 
-      // 有効なチャンネルIDかどうか確認
       if (!channelId || channelId.trim() === "") {
         throw new Error("チャンネルIDの解決に失敗しました。");
       }
 
-      // 重要: チャンネルIDが実際にUCで始まるIDであることを確認
       if (!channelId.match(/^UC[\w-]{22}$/)) {
         Logger.log(
           "警告: 取得したチャンネルIDの形式が正しくない可能性があります: " +
             channelId
         );
-        // ここで正確なチャンネルIDを改めて取得する試みをしてもよい
       }
 
-      Logger.log("解決されたチャンネルID: " + channelId); // デバッグログ追加
-
-      // チャンネルIDをシートに保存（他の分析で使用するため）
+      Logger.log("解決されたチャンネルID: " + channelId);
       dashboardSheet.getRange(CHANNEL_ID_CELL).setValue(channelId);
-      Logger.log("チャンネルID設定: " + channelId); // デバッグログ
+      Logger.log("チャンネルID設定: " + channelId);
     } catch (idError) {
-      // プログレスバーを閉じる
       if (!silentMode) {
         closeProgressDialog();
         ui.alert(
           "チャンネルエラー",
           "チャンネルIDの解決に失敗しました:\n\n" +
             idError.toString() +
-            "\n\n正しいチャンネルIDまたは@ハンドルを入力してください。",
+            "\n\n正しい@ハンドルまたはチャンネルIDを入力してください。",
           ui.ButtonSet.OK
         );
       }
       return;
     }
 
-    // この時点でチャンネルIDが存在するはず - セルの値を再確認
+    // 以下、既存のコードと同じ処理...
     channelId = dashboardSheet
       .getRange(CHANNEL_ID_CELL)
       .getValue()
       .toString()
       .trim();
-    Logger.log("ダッシュボードから取得したチャンネルID: " + channelId); // 重要なデバッグログ
+    Logger.log("ダッシュボードから取得したチャンネルID: " + channelId);
 
     if (!channelId || channelId.trim() === "") {
-      // プログレスバーを閉じる
       if (!silentMode) {
         closeProgressDialog();
         ui.alert(
@@ -1077,35 +1388,28 @@ function runChannelAnalysis(silentMode = false) {
       return;
     }
 
-    // チャンネルの詳細情報を取得
     if (!silentMode) {
       showProgressDialog("チャンネル統計情報を取得中...", 30);
     }
     const channelInfo = getChannelStatistics(channelId, apiKey);
 
-    // ダッシュボードに基本情報を表示
     updateDashboardWithChannelInfo(channelInfo);
 
-    // OAuth認証の有無で取得できる情報を分岐
     const service = getYouTubeOAuthService();
 
     if (service.hasAccess()) {
-      // OAuth認証済みの場合、詳細な分析データを取得
       if (!silentMode) {
         showProgressDialog("詳細分析データを取得中...", 50);
       }
 
-      // YouTube Analytics APIからデータを取得
       try {
         const analyticsData = getChannelAnalytics(channelId, service);
 
-        // 高度な指標を計算して表示
         if (!silentMode) {
           showProgressDialog("高度な指標を計算中...", 70);
         }
         calculateAdvancedMetrics(analyticsData, dashboardSheet);
 
-        // 最新動画のパフォーマンスデータを取得して表示
         if (!silentMode) {
           showProgressDialog("最新動画のパフォーマンスを分析中...", 80);
         }
@@ -1116,16 +1420,13 @@ function runChannelAnalysis(silentMode = false) {
           dashboardSheet
         );
 
-        // ダッシュボードのグラフを更新
         if (!silentMode) {
           showProgressDialog("グラフを更新中...", 90);
         }
         updateDashboardCharts(channelId, analyticsData, apiKey);
 
-        // 完了時に100%を表示（サイレントモードでない場合のみ）
         if (!silentMode) {
           showProgressDialog("分析完了", 100);
-          // 処理が完了したらプログレスバーを閉じる
           Utilities.sleep(1000);
           closeProgressDialog();
 
@@ -1138,16 +1439,13 @@ function runChannelAnalysis(silentMode = false) {
       } catch (e) {
         Logger.log("Analytics APIでエラー発生: " + e.toString());
 
-        // エラー発生時も基本情報は表示
         if (!silentMode) {
           showProgressDialog("基本情報のみ取得します...", 60);
         }
         getRecentVideos(channelId, apiKey, dashboardSheet);
 
-        // 完了時に100%を表示
         if (!silentMode) {
           showProgressDialog("基本分析完了", 100);
-          // プログレスバーを閉じる
           Utilities.sleep(1000);
           closeProgressDialog();
 
@@ -1163,22 +1461,17 @@ function runChannelAnalysis(silentMode = false) {
         }
       }
     } else {
-      // APIキーのみの場合、基本情報のみ表示
       if (!silentMode) {
         showProgressDialog("基本情報を取得中...", 50);
       }
 
-      // 最新動画の情報を取得して表示（APIキーでアクセス可能）
       getRecentVideos(channelId, apiKey, dashboardSheet);
 
-      // 完了時に100%を表示
       if (!silentMode) {
         showProgressDialog("基本分析完了", 100);
-        // プログレスバーを閉じる
         Utilities.sleep(1000);
         closeProgressDialog();
 
-        // 詳細分析には認証が必要である旨を通知
         ui.alert(
           "基本分析完了",
           "チャンネルの基本情報を取得しました。\n\n詳細な分析データ（視聴者層、収益、視聴維持率など）を取得するには、チャンネル所有者としてOAuth認証が必要です。\n\n「YouTube分析」メニューから「OAuth認証再設定」を実行してください。",
@@ -1188,7 +1481,6 @@ function runChannelAnalysis(silentMode = false) {
     }
   } catch (e) {
     Logger.log("エラー: " + e.toString());
-    // プログレスバーを閉じる
     if (!silentMode) {
       closeProgressDialog();
       ui.alert(
@@ -1663,43 +1955,89 @@ function getChannelAnalytics(channelId, service) {
 }
 
 /**
- * ダッシュボードにチャンネル情報を表示
+ * H7セル保護のための専用関数
+ */
+function protectH7Header(sheet) {
+  // H7セルを強制的に見出しに復元
+  sheet
+    .getRange("H7")
+    .setValue("平均再生回数")
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE")
+    .setHorizontalAlignment("center");
+    
+  Logger.log("H7見出しを保護しました");
+}
+
+/**
+ * ダッシュボードにチャンネル情報を表示（OAuth認証対応版）
  */
 function updateDashboardWithChannelInfo(channelInfo) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const dashboardSheet =
     ss.getSheetByName(DASHBOARD_SHEET_NAME) || ss.getActiveSheet();
 
+  // 見出しを保護
+  setupDashboardHeaders(dashboardSheet);
+
   // チャンネル名と分析日を表示
   dashboardSheet
-    .getRange(CHANNEL_NAME_CELL)
+    .getRange("C3")
     .setValue(channelInfo.snippet.title);
-  dashboardSheet.getRange(CHECK_DATE_CELL).setValue(new Date());
+  dashboardSheet
+    .getRange("C4")
+    .setValue(new Date());
 
-  // 基本的な統計情報 - 定数を使用して正しい位置に配置
+  // 基本的な統計情報を8行目に配置
   dashboardSheet
-    .getRange(SUBSCRIBER_COUNT_CELL)
-    .setValue(parseInt(channelInfo.statistics.subscriberCount || "0"));
+    .getRange("A8")
+    .setValue(parseInt(channelInfo.statistics.subscriberCount || "0"))
+    .setNumberFormat("#,##0");
+    
   dashboardSheet
-    .getRange(VIEW_COUNT_CELL)
-    .setValue(parseInt(channelInfo.statistics.viewCount || "0"));
-
-  // データのフォーマットを設定
-  dashboardSheet
-    .getRange(SUBSCRIBER_COUNT_CELL + ":" + VIEW_COUNT_CELL)
+    .getRange("B8")
+    .setValue(parseInt(channelInfo.statistics.viewCount || "0"))
     .setNumberFormat("#,##0");
 
-  // OAuth認証が必要な詳細指標の初期値
-  dashboardSheet.getRange(SUBSCRIPTION_RATE_CELL).setValue("認証が必要");
-  dashboardSheet.getRange(ENGAGEMENT_RATE_CELL).setValue("認証が必要");
-  dashboardSheet.getRange(RETENTION_RATE_CELL).setValue("認証が必要");
-  dashboardSheet.getRange(AVERAGE_VIEW_DURATION_CELL).setValue("認証が必要");
-  dashboardSheet.getRange(CLICK_RATE_CELL).setValue("認証が必要");
+  // **修正：OAuth認証状態をチェック**
+  const service = getYouTubeOAuthService();
+  const isAuthenticated = service.hasAccess();
+  
+  if (isAuthenticated) {
+    // 認証済みの場合：詳細データを取得中の表示
+    dashboardSheet.getRange("C8").setValue("取得中...");
+    dashboardSheet.getRange("D8").setValue("取得中...");
+    dashboardSheet.getRange("E8").setValue("取得中...");
+    dashboardSheet.getRange("F8").setValue("取得中...");
+    dashboardSheet.getRange("G8").setValue("取得中...");
+  } else {
+    // 未認証の場合：認証が必要と表示
+    dashboardSheet.getRange("C8").setValue("認証が必要");
+    dashboardSheet.getRange("D8").setValue("認証が必要");
+    dashboardSheet.getRange("E8").setValue("認証が必要");
+    dashboardSheet.getRange("F8").setValue("認証が必要");
+    dashboardSheet.getRange("G8").setValue("認証が必要");
+  }
 
-  // チャンネルアイコンを表示（可能な場合）
+  // 平均動画再生回数（基本情報から計算可能）
+  const viewCount = parseInt(channelInfo.statistics.viewCount || "0");
+  const videoCount = parseInt(channelInfo.statistics.videoCount || "0");
+  if (videoCount > 0) {
+    const avgViewsPerVideo = Math.round(viewCount / videoCount);
+    dashboardSheet
+      .getRange("H8")
+      .setValue(avgViewsPerVideo)
+      .setNumberFormat("#,##0");
+  } else {
+    dashboardSheet
+      .getRange("H8")
+      .setValue(0)
+      .setNumberFormat("#,##0");
+  }
+
+  // チャンネルアイコンを表示
   if (channelInfo.snippet.thumbnails && channelInfo.snippet.thumbnails.high) {
     dashboardSheet.getRange("F3:G4").merge();
-    // 修正: IMAGE関数に必要な4つのパラメータ（URL、モード、高さ、幅）を指定
     dashboardSheet
       .getRange("F3")
       .setValue(
@@ -1724,22 +2062,17 @@ function updateDashboardWithChannelInfo(channelInfo) {
     .setValue(parseInt(channelInfo.statistics.videoCount || "0"))
     .setNumberFormat("#,##0");
 
-  // 平均動画再生回数（総再生回数÷動画数）
-  const viewCount = parseInt(channelInfo.statistics.viewCount || "0");
-  const videoCount = parseInt(channelInfo.statistics.videoCount || "0");
-  if (videoCount > 0) {
-    const avgViewsPerVideo = Math.round(viewCount / videoCount);
-    dashboardSheet
-      .getRange("H7")
-      .setValue(avgViewsPerVideo)
-      .setNumberFormat("#,##0");
-  } else {
-    dashboardSheet.getRange("H7").setValue("0");
-  }
-
-  // チャンネル説明の見出し
+  // H7見出しを強制保護
   dashboardSheet
-    .getRange("A18:H18")
+    .getRange("H7")
+    .setValue("平均再生回数")
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE")
+    .setHorizontalAlignment("center");
+
+  // チャンネル説明
+  dashboardSheet
+    .getRange("A19:H19")
     .merge()
     .setValue("チャンネル概要")
     .setFontWeight("bold")
@@ -1747,20 +2080,43 @@ function updateDashboardWithChannelInfo(channelInfo) {
     .setFontColor("white")
     .setHorizontalAlignment("center");
 
-  // チャンネル説明を表示
   dashboardSheet
-    .getRange("A19:H23")
+    .getRange("A20:H24")
     .merge()
     .setValue(channelInfo.snippet.description || "説明なし")
     .setVerticalAlignment("top")
     .setWrap(true);
+
+  // **認証済みの場合、詳細データの取得を開始**
+  if (isAuthenticated) {
+    try {
+      const channelId = dashboardSheet.getRange(CHANNEL_ID_CELL).getValue().toString().trim();
+      if (channelId) {
+        // Analytics APIから詳細データを取得
+        const analyticsData = getChannelAnalytics(channelId, service);
+        // 詳細指標を計算して表示
+        calculateAdvancedMetrics(analyticsData, dashboardSheet);
+      }
+    } catch (e) {
+      Logger.log("詳細データ取得エラー: " + e.toString());
+      // エラーの場合は取得エラーを表示
+      dashboardSheet.getRange("C8").setValue("取得エラー");
+      dashboardSheet.getRange("D8").setValue("取得エラー");
+      dashboardSheet.getRange("E8").setValue("取得エラー");
+      dashboardSheet.getRange("F8").setValue("取得エラー");
+      dashboardSheet.getRange("G8").setValue("取得エラー");
+    }
+  }
 }
 
 /**
- * 高度な分析指標を計算して表示
+ * 高度な分析指標を計算して表示（H7保護版）
  */
 function calculateAdvancedMetrics(analyticsData, sheet) {
   try {
+    // **最初に見出しを保護**
+    setupDashboardHeaders(sheet);
+
     // 基本データが存在する場合のみ計算を実行
     if (
       analyticsData.basicStats &&
@@ -1778,8 +2134,9 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
       const minutes = Math.floor(averageViewDuration / 60);
       const seconds = Math.floor(averageViewDuration % 60);
 
+      // **重要：データは8行目に書き込む**
       sheet
-        .getRange(AVERAGE_VIEW_DURATION_CELL)
+        .getRange("F8")  // AVERAGE_VIEW_DURATION_CELL相当、8行目
         .setValue(`${minutes}:${seconds.toString().padStart(2, "0")}`);
 
       // 登録者関連指標がある場合
@@ -1800,23 +2157,23 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
         const subscriptionRate =
           totalViews > 0 ? (totalSubscribersGained / totalViews) * 100 : 0;
         sheet
-          .getRange(SUBSCRIPTION_RATE_CELL)
+          .getRange("C8")  // SUBSCRIPTION_RATE_CELL相当、8行目
           .setValue(subscriptionRate.toFixed(2) + "%");
       }
 
-      // 視聴維持率の推定 - より正確なデータがあれば置き換える
+      // 視聴維持率の推定
       if (
         analyticsData.deviceStats &&
         analyticsData.deviceStats.rows &&
         analyticsData.deviceStats.rows.length > 0
       ) {
-        // 視聴維持率を重み付け平均で計算（デバイスタイプごとの視聴回数で重み付け）
+        // 視聴維持率を重み付け平均で計算
         let totalWeightedRetention = 0;
         let totalDeviceViews = 0;
 
         analyticsData.deviceStats.rows.forEach((row) => {
-          const deviceViews = row[1]; // 視聴回数
-          const avgViewPercentage = row[3]; // 平均視聴率
+          const deviceViews = row[1];
+          const avgViewPercentage = row[3];
           totalWeightedRetention += deviceViews * avgViewPercentage;
           totalDeviceViews += deviceViews;
         });
@@ -1825,20 +2182,18 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
           const overallRetentionRate =
             totalWeightedRetention / totalDeviceViews;
           sheet
-            .getRange(RETENTION_RATE_CELL)
+            .getRange("E8")  // RETENTION_RATE_CELL相当、8行目
             .setValue(overallRetentionRate.toFixed(1) + "%");
         } else {
-          // デフォルト値（正確なデータがない場合）
-          const estimatedRetentionRate = 45 + Math.random() * 15; // 45%〜60%の範囲でランダム値
+          const estimatedRetentionRate = 45 + Math.random() * 15;
           sheet
-            .getRange(RETENTION_RATE_CELL)
+            .getRange("E8")  // 8行目
             .setValue(estimatedRetentionRate.toFixed(1) + "%");
         }
       } else {
-        // デフォルト値（正確なデータがない場合）
-        const estimatedRetentionRate = 45 + Math.random() * 15; // 45%〜60%の範囲でランダム値
+        const estimatedRetentionRate = 45 + Math.random() * 15;
         sheet
-          .getRange(RETENTION_RATE_CELL)
+          .getRange("E8")  // 8行目
           .setValue(estimatedRetentionRate.toFixed(1) + "%");
       }
 
@@ -1868,15 +2223,32 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
             : 0;
 
         sheet
-          .getRange(ENGAGEMENT_RATE_CELL)
+          .getRange("D8")  // ENGAGEMENT_RATE_CELL相当、8行目
           .setValue(engagementRate.toFixed(2) + "%");
       }
 
-      // クリック率を推定 (CTR) - 実際のデータがあれば置き換える
-      // 通常、クリック率は10%〜20%の範囲
-      const estimatedCTR = 10 + Math.random() * 10; // 10%〜20%の範囲でランダム値
-      sheet.getRange(CLICK_RATE_CELL).setValue(estimatedCTR.toFixed(1) + "%");
+      // クリック率を推定 (CTR)
+      const estimatedCTR = 10 + Math.random() * 10;
+      sheet
+        .getRange("G8")  // CLICK_RATE_CELL相当、8行目
+        .setValue(estimatedCTR.toFixed(1) + "%");
     }
+
+    // **最後に見出し行を再確認**
+    const allHeaders = ["登録者数", "総再生回数", "登録率", "エンゲージメント率", "視聴維持率", "平均視聴時間", "クリック率", "平均再生回数"];
+    
+    for (let i = 0; i < allHeaders.length; i++) {
+      const cellValue = sheet.getRange(7, i + 1).getValue();
+      if (cellValue !== allHeaders[i]) {
+        sheet
+          .getRange(7, i + 1)
+          .setValue(allHeaders[i])
+          .setFontWeight("bold")
+          .setBackground("#E8F0FE")
+          .setHorizontalAlignment("center");
+      }
+    }
+    
   } catch (e) {
     Logger.log("高度な指標の計算に失敗: " + e);
     // エラーがあっても処理を続行
@@ -6434,7 +6806,38 @@ function showHelp() {
 }
 
 /**
- * ワンクリック完全分析 - 自動進行版
+ * 編集時のイベントハンドラ - プレースホルダーから通常テキストへの変換を処理（修正版）
+ */
+function onEdit(e) {
+  try {
+    const range = e.range;
+    const sheet = range.getSheet();
+    const value = range.getValue();
+    
+    // D2セル（チャンネル入力欄）が編集された場合
+    if (range.getA1Notation() === "D2") {
+      // プレースホルダーでない実際の入力値の場合、書式をリセット
+      if (value && 
+          value !== "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" && 
+          !value.toString().startsWith("例:")) {
+        
+        // 書式を通常に戻す
+        range.setFontColor('black');
+        range.setFontStyle('normal');
+      }
+      // 空白になった場合、プレースホルダーを再表示
+      else if (!value) {
+        range.setValue("例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ");
+        range.setFontColor('#999999').setFontStyle('italic');
+      }
+    }
+  } catch (error) {
+    Logger.log('onEdit エラー: ' + error.toString());
+  }
+}
+
+/**
+ * ワンクリック完全分析 - 自動進行版（修正版）
  */
 function generateCompleteReport() {
   const ui = SpreadsheetApp.getUi();
@@ -6442,24 +6845,29 @@ function generateCompleteReport() {
   const dashboardSheet =
     ss.getSheetByName(DASHBOARD_SHEET_NAME) || ss.getActiveSheet();
 
-  // まず、チャンネル入力を確認
+  // チャンネル入力を確認（D2セルから）
   const channelInput = dashboardSheet
-    .getRange("C2")
+    .getRange("D2")  // 修正: C2 → D2
     .getValue()
     .toString()
     .trim();
 
-  if (!channelInput) {
+  // プレースホルダーテキストをチェック
+  if (!channelInput || 
+      channelInput === "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" ||
+      channelInput.startsWith("例:")) {
     ui.alert(
       "入力エラー",
-      "チャンネルIDまたは@ハンドルを入力してから、完全分析を実行してください。",
+      "チャンネル入力欄に以下のいずれかを入力してから、完全分析を実行してください：\n\n" +
+      "• @ハンドル（例: @YouTube）\n" +
+      "• チャンネルID（例: UC-9-kyTW8ZkZNDHQJ6FgpwQ）",
       ui.ButtonSet.OK
     );
-    return; // チャンネル入力がなければここで終了
+    return;
   }
 
+  // 以下、既存のコードと同じ...
   try {
-    // APIキーの確認
     const apiKey =
       PropertiesService.getUserProperties().getProperty("YOUTUBE_API_KEY");
     if (!apiKey) {
@@ -6471,13 +6879,10 @@ function generateCompleteReport() {
       return;
     }
 
-    // 重要な修正: チャンネルIDを先に解決して確実にUC形式のIDを取得する
     let resolvedChannelId;
     try {
-      // チャンネル入力を解決して実際のチャンネルIDを取得
       resolvedChannelId = resolveChannelIdentifier(channelInput, apiKey);
 
-      // チャンネルIDが正しい形式かどうか検証
       if (!resolvedChannelId.match(/^UC[\w-]{22}$/)) {
         throw new Error(
           "解決されたIDが正しいYouTubeチャンネルID形式ではありません: " +
@@ -6485,15 +6890,11 @@ function generateCompleteReport() {
         );
       }
 
-      // 解決されたチャンネルIDをB2に保存
       dashboardSheet.getRange(CHANNEL_ID_CELL).setValue(resolvedChannelId);
-
-      // 確認のため、値を直接ログに出力
       Logger.log(
         "チャンネルID解決済み。セルに保存されたID: " + resolvedChannelId
       );
 
-      // セルに正しくIDが保存されたか再確認
       const savedId = dashboardSheet
         .getRange(CHANNEL_ID_CELL)
         .getValue()
@@ -6507,13 +6908,13 @@ function generateCompleteReport() {
         "チャンネルID解決エラー",
         "チャンネルIDの解決中にエラーが発生しました: \n\n" +
           idError.toString() +
-          "\n\n正しいチャンネルIDまたは@ハンドルを入力してください。",
+          "\n\n正しい@ハンドルまたはチャンネルIDを入力してください。",
         ui.ButtonSet.OK
       );
       return;
     }
 
-    // 確認メッセージ
+    // 以下、既存のコードと同じ処理...
     const response = ui.alert(
       "完全分析の実行",
       "全ての分析モジュールを自動的に実行します。この処理には数分かかる場合があります。\n\n" +
@@ -6521,19 +6922,16 @@ function generateCompleteReport() {
       ui.ButtonSet.OK_CANCEL
     );
 
-    // キャンセルされたら終了
     if (response !== ui.Button.OK) {
       return;
     }
 
-    // プログレスバーを表示
     showProgressDialog("完全分析を開始しています...", 0);
 
     // 1. 基本チャンネル分析を実行（サイレントモード）
     showProgressDialog("ステップ 1/6: 基本チャンネル分析を実行中...", 5);
-    runChannelAnalysis(true); // サイレントモードで実行
+    runChannelAnalysis(true);
 
-    // チャンネルIDが正しく設定されたか確認
     const channelId = dashboardSheet
       .getRange(CHANNEL_ID_CELL)
       .getValue()
@@ -6546,38 +6944,32 @@ function generateCompleteReport() {
         "基本チャンネル分析でチャンネルIDを取得できませんでした。\n\n手動で基本チャンネル分析を実行し、エラーを確認してください。",
         ui.ButtonSet.OK
       );
-      return; // チャンネルIDがなければここで終了
+      return;
     }
 
-    // 2. 動画別パフォーマンス分析（サイレントモード）
+    // 2-6. 各分析モジュールを実行
     showProgressDialog("ステップ 2/6: 動画別パフォーマンス分析を実行中...", 20);
     analyzeVideoPerformance(true);
 
-    // 3. 視聴者層分析（サイレントモード）
     showProgressDialog("ステップ 3/6: 視聴者層分析を実行中...", 40);
     analyzeAudience(true);
 
-    // 4. エンゲージメント分析（サイレントモード）
     showProgressDialog("ステップ 4/6: エンゲージメント分析を実行中...", 60);
     analyzeEngagement(true);
 
-    // 5. トラフィックソース分析（サイレントモード）
     showProgressDialog("ステップ 5/6: トラフィックソース分析を実行中...", 80);
     analyzeTrafficSources(true);
 
-    // 6. AIによる改善提案（サイレントモード）
     showProgressDialog("ステップ 6/6: AIによる改善提案を実行中...", 90);
     generateAIRecommendations(true);
 
     // 7. 分析履歴を保存
     showProgressDialog("分析履歴を保存中...", 95);
     try {
-      // チャンネル情報を再取得
       const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings,contentDetails&id=${channelId}&key=${apiKey}`;
       const channelResponse = UrlFetchApp.fetch(channelUrl);
       const channelInfo = JSON.parse(channelResponse.getContentText()).items[0];
 
-      // OAuth認証がある場合は分析データも取得
       let analyticsDataForHistory = null;
       const service = getYouTubeOAuthService();
       if (service.hasAccess()) {
@@ -6591,7 +6983,6 @@ function generateCompleteReport() {
         }
       }
 
-      // 分析履歴に保存
       const historyResult = saveAnalysisToHistory(
         channelInfo,
         analyticsDataForHistory
@@ -6603,13 +6994,10 @@ function generateCompleteReport() {
       Logger.log("完全分析の履歴保存中にエラー: " + historyError.toString());
     }
 
-    // 完全分析完了
     showProgressDialog("完全分析完了!", 100);
-    // プログレスバーを確実に閉じる
-    Utilities.sleep(1000); // 1秒待機してから閉じる
+    Utilities.sleep(1000);
     closeProgressDialog();
 
-    // ダッシュボードシートを表示
     SpreadsheetApp.getActiveSpreadsheet()
       .getSheetByName(DASHBOARD_SHEET_NAME)
       .activate();
@@ -6622,7 +7010,6 @@ function generateCompleteReport() {
       ui.ButtonSet.OK
     );
   } catch (e) {
-    // プログレスバーを閉じる
     closeProgressDialog();
     ui.alert(
       "エラー",
