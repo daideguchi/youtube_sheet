@@ -44,7 +44,7 @@ function createUserInterface() {
     .addItem("🔑 OAuth認証再設定", "setupOAuth")
     .addItem("✅ 認証完了", "completeAuthentication")
     .addItem("🔍 認証状態テスト", "testOAuthStatus")
-    .addItem("🔍 OAuth状態デバッグ", "debugOAuthStatus")  // 追加
+    .addItem("🔍 OAuth状態デバッグ", "debugOAuthStatus") // 追加
     .addSeparator()
     .addItem("🚀 ワンクリック完全分析", "generateCompleteReport")
     .addItem("🔍 基本チャンネル分析のみ実行", "runChannelAnalysis")
@@ -76,12 +76,20 @@ function createUserInterface() {
 function repairDashboardHeaders() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
-  
+
   if (dashboardSheet) {
     setupDashboardHeaders(dashboardSheet);
-    SpreadsheetApp.getUi().alert('修復完了', 'ダッシュボードの見出しを修復しました。', SpreadsheetApp.getUi().ButtonSet.OK);
+    SpreadsheetApp.getUi().alert(
+      "修復完了",
+      "ダッシュボードの見出しを修復しました。",
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
   } else {
-    SpreadsheetApp.getUi().alert('エラー', 'ダッシュボードシートが見つかりません。', SpreadsheetApp.getUi().ButtonSet.OK);
+    SpreadsheetApp.getUi().alert(
+      "エラー",
+      "ダッシュボードシートが見つかりません。",
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
   }
 }
 
@@ -99,9 +107,9 @@ function initializeDashboard() {
 
   // 既存シートでも見出しを確実に設定（毎回実行）
   setupDashboardHeaders(dashboardSheet);
-  
+
   const ui = SpreadsheetApp.getUi();
-  ui.alert('初期化完了', 'ダッシュボードが初期化されました。', ui.ButtonSet.OK);
+  ui.alert("初期化完了", "ダッシュボードが初期化されました。", ui.ButtonSet.OK);
 }
 
 /**
@@ -110,20 +118,24 @@ function initializeDashboard() {
 function checkH7Status() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
-  
+
   if (dashboardSheet) {
     const h7Value = dashboardSheet.getRange("H7").getValue();
     const ui = SpreadsheetApp.getUi();
-    
+
     ui.alert(
-      'H7セル状態チェック',
+      "H7セル状態チェック",
       `H7セルの現在の値: "${h7Value}"\n\n正しい値: "平均再生回数"`,
       ui.ButtonSet.OK
     );
-    
+
     if (h7Value !== "平均再生回数") {
       protectH7Header(dashboardSheet);
-      ui.alert('修復完了', 'H7セルを「平均再生回数」に修復しました。', ui.ButtonSet.OK);
+      ui.alert(
+        "修復完了",
+        "H7セルを「平均再生回数」に修復しました。",
+        ui.ButtonSet.OK
+      );
     }
   }
 }
@@ -149,22 +161,24 @@ function setupDashboardHeaders(dashboardSheet) {
     .setValue("チャンネル入力（@ハンドル または チャンネルID）:")
     .setFontWeight("bold")
     .setBackground("#E8F0FE");
-  
+
   // 入力欄（D2からF2をマージして使用）
   dashboardSheet.getRange("D2:F2").merge().setBackground("#F8F9FA");
-  
+
   // プレースホルダーテキストを設定（既存の値がない場合のみ）
   const currentValue = dashboardSheet.getRange("D2").getValue();
   if (!currentValue || currentValue.toString().startsWith("例:")) {
-    dashboardSheet.getRange("D2").setValue("例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ");
-    dashboardSheet.getRange("D2").setFontColor("#999999").setFontStyle("italic");
+    dashboardSheet
+      .getRange("D2")
+      .setValue("例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ");
+    dashboardSheet
+      .getRange("D2")
+      .setFontColor("#999999")
+      .setFontStyle("italic");
   }
 
   // チャンネル情報表示欄
-  dashboardSheet
-    .getRange("A3")
-    .setValue("チャンネル名:")
-    .setFontWeight("bold");
+  dashboardSheet.getRange("A3").setValue("チャンネル名:").setFontWeight("bold");
   dashboardSheet.getRange("A4").setValue("分析日:").setFontWeight("bold");
 
   // **重要：主要指標見出しを確実に設定**
@@ -179,14 +193,49 @@ function setupDashboardHeaders(dashboardSheet) {
     .setHorizontalAlignment("center");
 
   // **最重要：主要指標ラベルを個別に確実に設定（特にH7を保護）**
-  dashboardSheet.getRange("A7").setValue("登録者数").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("B7").setValue("総再生回数").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("C7").setValue("登録率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("D7").setValue("エンゲージメント率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("E7").setValue("視聴維持率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("F7").setValue("平均視聴時間").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("G7").setValue("クリック率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  
+  dashboardSheet
+    .getRange("A7")
+    .setValue("登録者数")
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE")
+    .setHorizontalAlignment("center");
+  dashboardSheet
+    .getRange("B7")
+    .setValue("総再生回数")
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE")
+    .setHorizontalAlignment("center");
+  dashboardSheet
+    .getRange("C7")
+    .setValue("登録率")
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE")
+    .setHorizontalAlignment("center");
+  dashboardSheet
+    .getRange("D7")
+    .setValue("エンゲージメント率")
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE")
+    .setHorizontalAlignment("center");
+  dashboardSheet
+    .getRange("E7")
+    .setValue("視聴維持率")
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE")
+    .setHorizontalAlignment("center");
+  dashboardSheet
+    .getRange("F7")
+    .setValue("平均視聴時間")
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE")
+    .setHorizontalAlignment("center");
+  dashboardSheet
+    .getRange("G7")
+    .setValue("クリック率")
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE")
+    .setHorizontalAlignment("center");
+
   // **特にH7を強力に保護**
   dashboardSheet
     .getRange("H7")
@@ -236,10 +285,7 @@ function setupDashboardHeaders(dashboardSheet) {
       "チャンネル入力: 上の入力欄に@ハンドル（例: @YouTube）またはチャンネルIDを入力",
     ],
     ["4.", "完全分析: 「ワンクリック完全分析」で全ての分析を一度に実行"],
-    [
-      "5.",
-      "個別分析: 必要に応じて「個別分析モジュール」から特定の分析を実行",
-    ],
+    ["5.", "個別分析: 必要に応じて「個別分析モジュール」から特定の分析を実行"],
   ];
 
   dashboardSheet.getRange("A14:B18").setValues(instructions);
@@ -292,7 +338,7 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
 
       // **重要：データは8行目に書き込む**
       sheet
-        .getRange("F8")  // AVERAGE_VIEW_DURATION_CELL相当、8行目
+        .getRange("F8") // AVERAGE_VIEW_DURATION_CELL相当、8行目
         .setValue(`${minutes}:${seconds.toString().padStart(2, "0")}`);
 
       // 登録者関連指標がある場合
@@ -313,7 +359,7 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
         const subscriptionRate =
           totalViews > 0 ? (totalSubscribersGained / totalViews) * 100 : 0;
         sheet
-          .getRange("C8")  // SUBSCRIPTION_RATE_CELL相当、8行目
+          .getRange("C8") // SUBSCRIPTION_RATE_CELL相当、8行目
           .setValue(subscriptionRate.toFixed(2) + "%");
       }
 
@@ -338,18 +384,18 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
           const overallRetentionRate =
             totalWeightedRetention / totalDeviceViews;
           sheet
-            .getRange("E8")  // RETENTION_RATE_CELL相当、8行目
+            .getRange("E8") // RETENTION_RATE_CELL相当、8行目
             .setValue(overallRetentionRate.toFixed(1) + "%");
         } else {
           const estimatedRetentionRate = 45 + Math.random() * 15;
           sheet
-            .getRange("E8")  // 8行目
+            .getRange("E8") // 8行目
             .setValue(estimatedRetentionRate.toFixed(1) + "%");
         }
       } else {
         const estimatedRetentionRate = 45 + Math.random() * 15;
         sheet
-          .getRange("E8")  // 8行目
+          .getRange("E8") // 8行目
           .setValue(estimatedRetentionRate.toFixed(1) + "%");
       }
 
@@ -379,20 +425,29 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
             : 0;
 
         sheet
-          .getRange("D8")  // ENGAGEMENT_RATE_CELL相当、8行目
+          .getRange("D8") // ENGAGEMENT_RATE_CELL相当、8行目
           .setValue(engagementRate.toFixed(2) + "%");
       }
 
       // クリック率を推定 (CTR)
       const estimatedCTR = 10 + Math.random() * 10;
       sheet
-        .getRange("G8")  // CLICK_RATE_CELL相当、8行目
+        .getRange("G8") // CLICK_RATE_CELL相当、8行目
         .setValue(estimatedCTR.toFixed(1) + "%");
     }
 
     // **最後に見出し行を再確認**
-    const allHeaders = ["登録者数", "総再生回数", "登録率", "エンゲージメント率", "視聴維持率", "平均視聴時間", "クリック率", "平均再生回数"];
-    
+    const allHeaders = [
+      "登録者数",
+      "総再生回数",
+      "登録率",
+      "エンゲージメント率",
+      "視聴維持率",
+      "平均視聴時間",
+      "クリック率",
+      "平均再生回数",
+    ];
+
     for (let i = 0; i < allHeaders.length; i++) {
       const cellValue = sheet.getRange(7, i + 1).getValue();
       if (cellValue !== allHeaders[i]) {
@@ -404,7 +459,6 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
           .setHorizontalAlignment("center");
       }
     }
-    
   } catch (e) {
     Logger.log("高度な指標の計算に失敗: " + e);
     // エラーがあっても処理を続行
@@ -439,107 +493,129 @@ function resetAudienceSheet() {
   }
 }
 
-
 /**
  * ライブラリなしでのOAuth2実装（完全版）
  */
 function getYouTubeOAuthService() {
   return {
-    hasAccess: function() {
-      const token = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
-      const expiryTime = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN_EXPIRY");
-      
+    hasAccess: function () {
+      const token =
+        PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
+      const expiryTime = PropertiesService.getUserProperties().getProperty(
+        "YT_ACCESS_TOKEN_EXPIRY"
+      );
+
       if (!token || !expiryTime) {
         return false;
       }
-      
+
       const now = new Date().getTime();
       const expiry = parseInt(expiryTime);
-      
+
       // トークンの有効期限をチェック
       if (now >= expiry) {
         // 期限切れの場合、リフレッシュトークンで更新を試行
         return this.refreshAccessToken();
       }
-      
+
       return true;
     },
-    
-    getAccessToken: function() {
-      return PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
+
+    getAccessToken: function () {
+      return PropertiesService.getUserProperties().getProperty(
+        "YT_ACCESS_TOKEN"
+      );
     },
-    
-    getAuthorizationUrl: function() {
-      const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
-      const redirectUri = 'urn:ietf:wg:oauth:2.0:oob';
+
+    getAuthorizationUrl: function () {
+      const clientId =
+        PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+      const redirectUri = "urn:ietf:wg:oauth:2.0:oob";
       const scope = [
-        'https://www.googleapis.com/auth/youtube.readonly',
-        'https://www.googleapis.com/auth/yt-analytics.readonly',
-        'https://www.googleapis.com/auth/yt-analytics-monetary.readonly'
-      ].join(' ');
-      
+        "https://www.googleapis.com/auth/youtube.readonly",
+        "https://www.googleapis.com/auth/yt-analytics.readonly",
+        "https://www.googleapis.com/auth/yt-analytics-monetary.readonly",
+      ].join(" ");
+
       const state = Utilities.getUuid();
       PropertiesService.getUserProperties().setProperty("OAUTH_STATE", state);
-      
-      return `https://accounts.google.com/o/oauth2/auth?` +
-             `client_id=${clientId}&` +
-             `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-             `scope=${encodeURIComponent(scope)}&` +
-             `response_type=code&` +
-             `access_type=offline&` +
-             `prompt=consent&` +
-             `state=${state}`;
+
+      return (
+        `https://accounts.google.com/o/oauth2/auth?` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `response_type=code&` +
+        `access_type=offline&` +
+        `prompt=consent&` +
+        `state=${state}`
+      );
     },
-    
-    reset: function() {
+
+    reset: function () {
       PropertiesService.getUserProperties().deleteProperty("YT_ACCESS_TOKEN");
-      PropertiesService.getUserProperties().deleteProperty("YT_ACCESS_TOKEN_EXPIRY");
+      PropertiesService.getUserProperties().deleteProperty(
+        "YT_ACCESS_TOKEN_EXPIRY"
+      );
       PropertiesService.getUserProperties().deleteProperty("YT_REFRESH_TOKEN");
       PropertiesService.getUserProperties().deleteProperty("OAUTH_STATE");
     },
-    
-    handleCallback: function(request) {
+
+    handleCallback: function (request) {
       // 実装は簡略化（手動での認証コード入力方式）
       return false;
     },
-    
-    refreshAccessToken: function() {
-      const refreshToken = PropertiesService.getUserProperties().getProperty("YT_REFRESH_TOKEN");
-      const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
-      const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
-      
+
+    refreshAccessToken: function () {
+      const refreshToken =
+        PropertiesService.getUserProperties().getProperty("YT_REFRESH_TOKEN");
+      const clientId =
+        PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+      const clientSecret = PropertiesService.getScriptProperties().getProperty(
+        "OAUTH_CLIENT_SECRET"
+      );
+
       if (!refreshToken || !clientId || !clientSecret) {
         return false;
       }
-      
+
       try {
-        const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          payload: [
-            'grant_type=refresh_token',
-            `refresh_token=${refreshToken}`,
-            `client_id=${clientId}`,
-            `client_secret=${clientSecret}`
-          ].join('&')
-        });
-        
+        const response = UrlFetchApp.fetch(
+          "https://oauth2.googleapis.com/token",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            payload: [
+              "grant_type=refresh_token",
+              `refresh_token=${refreshToken}`,
+              `client_id=${clientId}`,
+              `client_secret=${clientSecret}`,
+            ].join("&"),
+          }
+        );
+
         const data = JSON.parse(response.getContentText());
-        
+
         if (data.access_token) {
-          const expiryTime = new Date().getTime() + (data.expires_in * 1000);
-          PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN", data.access_token);
-          PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN_EXPIRY", expiryTime.toString());
+          const expiryTime = new Date().getTime() + data.expires_in * 1000;
+          PropertiesService.getUserProperties().setProperty(
+            "YT_ACCESS_TOKEN",
+            data.access_token
+          );
+          PropertiesService.getUserProperties().setProperty(
+            "YT_ACCESS_TOKEN_EXPIRY",
+            expiryTime.toString()
+          );
           return true;
         }
       } catch (e) {
-        Logger.log('リフレッシュトークンエラー: ' + e.toString());
+        Logger.log("リフレッシュトークンエラー: " + e.toString());
       }
-      
+
       return false;
-    }
+    },
   };
 }
 
@@ -548,50 +624,61 @@ function getYouTubeOAuthService() {
  */
 function setupManualOAuth() {
   const ui = SpreadsheetApp.getUi();
-  
+
   // 1. Client IDとSecretの確認
-  const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
-  const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
-  
+  const clientId =
+    PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+  const clientSecret = PropertiesService.getScriptProperties().getProperty(
+    "OAUTH_CLIENT_SECRET"
+  );
+
   if (!clientId || !clientSecret) {
-    ui.alert('エラー', 'OAuth Client IDとSecretを先に設定してください。', ui.ButtonSet.OK);
+    ui.alert(
+      "エラー",
+      "OAuth Client IDとSecretを先に設定してください。",
+      ui.ButtonSet.OK
+    );
     return;
   }
-  
+
   // 2. 固定のWebアプリURLを使用
-  const webAppUrl = "https://script.google.com/macros/s/AKfycbz63hfa8tBjm3BxsyQYfCRme5EkQNqdxMIbBsqFf-qbjv-6VWwtemy11zMje3YKqpmLFA/exec";
-  
+  const webAppUrl =
+    "https://script.google.com/macros/s/AKfycbz63hfa8tBjm3BxsyQYfCRme5EkQNqdxMIbBsqFf-qbjv-6VWwtemy11zMje3YKqpmLFA/exec";
+
   // 3. 認証URLを生成
   const state = Utilities.getUuid();
   PropertiesService.getUserProperties().setProperty("OAUTH_STATE", state);
-  
+
   const scope = [
-    'https://www.googleapis.com/auth/youtube.readonly',
-    'https://www.googleapis.com/auth/yt-analytics.readonly',
-    'https://www.googleapis.com/auth/yt-analytics-monetary.readonly'
-  ].join(' ');
-  
-  const authUrl = `https://accounts.google.com/o/oauth2/auth?` +
-                  `client_id=${clientId}&` +
-                  `redirect_uri=${encodeURIComponent(webAppUrl)}&` +
-                  `scope=${encodeURIComponent(scope)}&` +
-                  `response_type=code&` +
-                  `access_type=offline&` +
-                  `prompt=consent&` +
-                  `state=${state}`;
-  
+    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/yt-analytics.readonly",
+    "https://www.googleapis.com/auth/yt-analytics-monetary.readonly",
+  ].join(" ");
+
+  const authUrl =
+    `https://accounts.google.com/o/oauth2/auth?` +
+    `client_id=${clientId}&` +
+    `redirect_uri=${encodeURIComponent(webAppUrl)}&` +
+    `scope=${encodeURIComponent(scope)}&` +
+    `response_type=code&` +
+    `access_type=offline&` +
+    `prompt=consent&` +
+    `state=${state}`;
+
   // 4. 認証URLを表示
   const urlResponse = ui.alert(
-    'OAuth認証 - ステップ1',
-    '以下のURLをブラウザで開いて認証を行ってください：\n\n' + authUrl + '\n\n' +
-    '認証が完了すると自動でリダイレクトされます。その後「OK」をクリックしてください。',
+    "OAuth認証 - ステップ1",
+    "以下のURLをブラウザで開いて認証を行ってください：\n\n" +
+      authUrl +
+      "\n\n" +
+      "認証が完了すると自動でリダイレクトされます。その後「OK」をクリックしてください。",
     ui.ButtonSet.OK_CANCEL
   );
-  
+
   if (urlResponse !== ui.Button.OK) {
     return;
   }
-  
+
   // 5. 認証完了を待機
   completeOAuthProcess(clientId, clientSecret, webAppUrl);
 }
@@ -601,53 +688,79 @@ function setupManualOAuth() {
  */
 function completeOAuthProcess(clientId, clientSecret, redirectUri) {
   const ui = SpreadsheetApp.getUi();
-  
+
   // 一時保存された認証コードを取得
-  const authCode = PropertiesService.getUserProperties().getProperty("TEMP_AUTH_CODE");
-  
+  const authCode =
+    PropertiesService.getUserProperties().getProperty("TEMP_AUTH_CODE");
+
   if (!authCode) {
-    ui.alert('エラー', '認証コードが見つかりません。もう一度認証を行ってください。', ui.ButtonSet.OK);
+    ui.alert(
+      "エラー",
+      "認証コードが見つかりません。もう一度認証を行ってください。",
+      ui.ButtonSet.OK
+    );
     return;
   }
-  
+
   // 認証コードを削除
   PropertiesService.getUserProperties().deleteProperty("TEMP_AUTH_CODE");
-  
+
   // アクセストークンを取得
   try {
-    const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
+    const response = UrlFetchApp.fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       payload: [
-        'grant_type=authorization_code',
+        "grant_type=authorization_code",
         `code=${authCode}`,
         `client_id=${clientId}`,
         `client_secret=${clientSecret}`,
-        `redirect_uri=${redirectUri}`
-      ].join('&'),
-      muteHttpExceptions: true
+        `redirect_uri=${redirectUri}`,
+      ].join("&"),
+      muteHttpExceptions: true,
     });
-    
+
     const data = JSON.parse(response.getContentText());
-    
+
     if (data.access_token) {
-      const expiryTime = new Date().getTime() + (data.expires_in * 1000);
-      PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN", data.access_token);
-      PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN_EXPIRY", expiryTime.toString());
-      
+      const expiryTime = new Date().getTime() + data.expires_in * 1000;
+      PropertiesService.getUserProperties().setProperty(
+        "YT_ACCESS_TOKEN",
+        data.access_token
+      );
+      PropertiesService.getUserProperties().setProperty(
+        "YT_ACCESS_TOKEN_EXPIRY",
+        expiryTime.toString()
+      );
+
       if (data.refresh_token) {
-        PropertiesService.getUserProperties().setProperty("YT_REFRESH_TOKEN", data.refresh_token);
+        PropertiesService.getUserProperties().setProperty(
+          "YT_REFRESH_TOKEN",
+          data.refresh_token
+        );
       }
-      
-      ui.alert('成功', 'OAuth認証が完了しました！詳細分析が利用可能になりました。', ui.ButtonSet.OK);
+
+      ui.alert(
+        "成功",
+        "OAuth認証が完了しました！詳細分析が利用可能になりました。",
+        ui.ButtonSet.OK
+      );
       updateAPIStatus();
     } else {
-      ui.alert('エラー', 'アクセストークンの取得に失敗しました: ' + response.getContentText(), ui.ButtonSet.OK);
+      ui.alert(
+        "エラー",
+        "アクセストークンの取得に失敗しました: " + response.getContentText(),
+        ui.ButtonSet.OK
+      );
     }
   } catch (e) {
-    ui.alert('エラー', 'OAuth認証中にエラーが発生しました: ' + e.toString(), ui.ButtonSet.OK);
+    ui.alert(
+      "エラー",
+      "OAuth認証中にエラーが発生しました: " + e.toString(),
+      ui.ButtonSet.OK
+    );
   }
 }
 
@@ -655,10 +768,14 @@ function completeOAuthProcess(clientId, clientSecret, redirectUri) {
  * 認証完了ボタン（メニューに追加用）
  */
 function completeAuthentication() {
-  const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
-  const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
-  const webAppUrl = "https://script.google.com/macros/s/AKfycbz63hfa8tBjm3BxsyQYfCRme5EkQNqdxMIbBsqFf-qbjv-6VWwtemy11zMje3YKqpmLFA/exec";
-  
+  const clientId =
+    PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+  const clientSecret = PropertiesService.getScriptProperties().getProperty(
+    "OAUTH_CLIENT_SECRET"
+  );
+  const webAppUrl =
+    "https://script.google.com/macros/s/AKfycbz63hfa8tBjm3BxsyQYfCRme5EkQNqdxMIbBsqFf-qbjv-6VWwtemy11zMje3YKqpmLFA/exec";
+
   completeOAuthProcess(clientId, clientSecret, webAppUrl);
 }
 /**
@@ -671,7 +788,7 @@ function getWebAppUrl() {
     return `https://script.google.com/macros/s/${scriptId}/exec`;
   } catch (e) {
     // エラーの場合は固定URLを返す
-    Logger.log('スクリプトID取得エラー: ' + e.toString());
+    Logger.log("スクリプトID取得エラー: " + e.toString());
     return "https://script.google.com/macros/s/AKfycbz63hfa8tBjm3BxsyQYfCRme5EkQNqdxMIbBsqFf-qbjv-6VWwtemy11zMje3YKqpmLFA/exec";
   }
 }
@@ -681,53 +798,79 @@ function getWebAppUrl() {
  */
 function completeOAuthProcess(clientId, clientSecret, redirectUri) {
   const ui = SpreadsheetApp.getUi();
-  
+
   // 一時保存された認証コードを取得
-  const authCode = PropertiesService.getUserProperties().getProperty("TEMP_AUTH_CODE");
-  
+  const authCode =
+    PropertiesService.getUserProperties().getProperty("TEMP_AUTH_CODE");
+
   if (!authCode) {
-    ui.alert('エラー', '認証コードが見つかりません。もう一度認証を行ってください。', ui.ButtonSet.OK);
+    ui.alert(
+      "エラー",
+      "認証コードが見つかりません。もう一度認証を行ってください。",
+      ui.ButtonSet.OK
+    );
     return;
   }
-  
+
   // 認証コードを削除
   PropertiesService.getUserProperties().deleteProperty("TEMP_AUTH_CODE");
-  
+
   // アクセストークンを取得
   try {
-    const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
+    const response = UrlFetchApp.fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       payload: [
-        'grant_type=authorization_code',
+        "grant_type=authorization_code",
         `code=${authCode}`,
         `client_id=${clientId}`,
         `client_secret=${clientSecret}`,
-        `redirect_uri=${redirectUri}`
-      ].join('&'),
-      muteHttpExceptions: true
+        `redirect_uri=${redirectUri}`,
+      ].join("&"),
+      muteHttpExceptions: true,
     });
-    
+
     const data = JSON.parse(response.getContentText());
-    
+
     if (data.access_token) {
-      const expiryTime = new Date().getTime() + (data.expires_in * 1000);
-      PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN", data.access_token);
-      PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN_EXPIRY", expiryTime.toString());
-      
+      const expiryTime = new Date().getTime() + data.expires_in * 1000;
+      PropertiesService.getUserProperties().setProperty(
+        "YT_ACCESS_TOKEN",
+        data.access_token
+      );
+      PropertiesService.getUserProperties().setProperty(
+        "YT_ACCESS_TOKEN_EXPIRY",
+        expiryTime.toString()
+      );
+
       if (data.refresh_token) {
-        PropertiesService.getUserProperties().setProperty("YT_REFRESH_TOKEN", data.refresh_token);
+        PropertiesService.getUserProperties().setProperty(
+          "YT_REFRESH_TOKEN",
+          data.refresh_token
+        );
       }
-      
-      ui.alert('成功', 'OAuth認証が完了しました！詳細分析が利用可能になりました。', ui.ButtonSet.OK);
+
+      ui.alert(
+        "成功",
+        "OAuth認証が完了しました！詳細分析が利用可能になりました。",
+        ui.ButtonSet.OK
+      );
       updateAPIStatus();
     } else {
-      ui.alert('エラー', 'アクセストークンの取得に失敗しました: ' + response.getContentText(), ui.ButtonSet.OK);
+      ui.alert(
+        "エラー",
+        "アクセストークンの取得に失敗しました: " + response.getContentText(),
+        ui.ButtonSet.OK
+      );
     }
   } catch (e) {
-    ui.alert('エラー', 'OAuth認証中にエラーが発生しました: ' + e.toString(), ui.ButtonSet.OK);
+    ui.alert(
+      "エラー",
+      "OAuth認証中にエラーが発生しました: " + e.toString(),
+      ui.ButtonSet.OK
+    );
   }
 }
 
@@ -735,13 +878,15 @@ function completeOAuthProcess(clientId, clientSecret, redirectUri) {
  * 認証完了ボタン（メニューに追加用）
  */
 function completeAuthentication() {
-  const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
-  const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
+  const clientId =
+    PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+  const clientSecret = PropertiesService.getScriptProperties().getProperty(
+    "OAUTH_CLIENT_SECRET"
+  );
   const webAppUrl = getWebAppUrl();
-  
+
   completeOAuthProcess(clientId, clientSecret, webAppUrl);
 }
-
 
 /**
  * APIキーを設定するダイアログ
@@ -825,8 +970,11 @@ function setupOAuth() {
   }
 
   // 認証情報が設定されているか確認
-  const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
-  const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
+  const clientId =
+    PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+  const clientSecret = PropertiesService.getScriptProperties().getProperty(
+    "OAUTH_CLIENT_SECRET"
+  );
 
   if (!clientId || !clientSecret) {
     // 認証情報が設定されていない場合は設定画面を表示
@@ -911,97 +1059,120 @@ function setupOAuthCredentials() {
  */
 function getYouTubeOAuthService() {
   return {
-    hasAccess: function() {
-      const token = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
-      const expiryTime = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN_EXPIRY");
-      
+    hasAccess: function () {
+      const token =
+        PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
+      const expiryTime = PropertiesService.getUserProperties().getProperty(
+        "YT_ACCESS_TOKEN_EXPIRY"
+      );
+
       if (!token || !expiryTime) {
         return false;
       }
-      
+
       const now = new Date().getTime();
       const expiry = parseInt(expiryTime);
-      
+
       // トークンの有効期限をチェック
       if (now >= expiry) {
         // 期限切れの場合、リフレッシュトークンで更新を試行
         return this.refreshAccessToken();
       }
-      
+
       return true;
     },
-    
-    getAccessToken: function() {
-      return PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
+
+    getAccessToken: function () {
+      return PropertiesService.getUserProperties().getProperty(
+        "YT_ACCESS_TOKEN"
+      );
     },
-    
-    getAuthorizationUrl: function() {
-      const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
-      const redirectUri = 'urn:ietf:wg:oauth:2.0:oob';
+
+    getAuthorizationUrl: function () {
+      const clientId =
+        PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+      const redirectUri = "urn:ietf:wg:oauth:2.0:oob";
       const scope = [
-        'https://www.googleapis.com/auth/youtube.readonly',
-        'https://www.googleapis.com/auth/yt-analytics.readonly',
-        'https://www.googleapis.com/auth/yt-analytics-monetary.readonly'
-      ].join(' ');
-      
+        "https://www.googleapis.com/auth/youtube.readonly",
+        "https://www.googleapis.com/auth/yt-analytics.readonly",
+        "https://www.googleapis.com/auth/yt-analytics-monetary.readonly",
+      ].join(" ");
+
       const state = Utilities.getUuid();
       PropertiesService.getUserProperties().setProperty("OAUTH_STATE", state);
-      
-      return `https://accounts.google.com/o/oauth2/auth?` +
-             `client_id=${clientId}&` +
-             `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-             `scope=${encodeURIComponent(scope)}&` +
-             `response_type=code&` +
-             `access_type=offline&` +
-             `prompt=consent&` +
-             `state=${state}`;
+
+      return (
+        `https://accounts.google.com/o/oauth2/auth?` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `response_type=code&` +
+        `access_type=offline&` +
+        `prompt=consent&` +
+        `state=${state}`
+      );
     },
-    
-    reset: function() {
+
+    reset: function () {
       PropertiesService.getUserProperties().deleteProperty("YT_ACCESS_TOKEN");
-      PropertiesService.getUserProperties().deleteProperty("YT_ACCESS_TOKEN_EXPIRY");
+      PropertiesService.getUserProperties().deleteProperty(
+        "YT_ACCESS_TOKEN_EXPIRY"
+      );
       PropertiesService.getUserProperties().deleteProperty("YT_REFRESH_TOKEN");
       PropertiesService.getUserProperties().deleteProperty("OAUTH_STATE");
     },
-    
-    refreshAccessToken: function() {
-      const refreshToken = PropertiesService.getUserProperties().getProperty("YT_REFRESH_TOKEN");
-      const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
-      const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
-      
+
+    refreshAccessToken: function () {
+      const refreshToken =
+        PropertiesService.getUserProperties().getProperty("YT_REFRESH_TOKEN");
+      const clientId =
+        PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
+      const clientSecret = PropertiesService.getScriptProperties().getProperty(
+        "OAUTH_CLIENT_SECRET"
+      );
+
       if (!refreshToken || !clientId || !clientSecret) {
         return false;
       }
-      
+
       try {
-        const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          payload: [
-            'grant_type=refresh_token',
-            `refresh_token=${refreshToken}`,
-            `client_id=${clientId}`,
-            `client_secret=${clientSecret}`
-          ].join('&'),
-          muteHttpExceptions: true
-        });
-        
+        const response = UrlFetchApp.fetch(
+          "https://oauth2.googleapis.com/token",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            payload: [
+              "grant_type=refresh_token",
+              `refresh_token=${refreshToken}`,
+              `client_id=${clientId}`,
+              `client_secret=${clientSecret}`,
+            ].join("&"),
+            muteHttpExceptions: true,
+          }
+        );
+
         const data = JSON.parse(response.getContentText());
-        
+
         if (data.access_token) {
-          const expiryTime = new Date().getTime() + (data.expires_in * 1000);
-          PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN", data.access_token);
-          PropertiesService.getUserProperties().setProperty("YT_ACCESS_TOKEN_EXPIRY", expiryTime.toString());
+          const expiryTime = new Date().getTime() + data.expires_in * 1000;
+          PropertiesService.getUserProperties().setProperty(
+            "YT_ACCESS_TOKEN",
+            data.access_token
+          );
+          PropertiesService.getUserProperties().setProperty(
+            "YT_ACCESS_TOKEN_EXPIRY",
+            expiryTime.toString()
+          );
           return true;
         }
       } catch (e) {
-        Logger.log('リフレッシュトークンエラー: ' + e.toString());
+        Logger.log("リフレッシュトークンエラー: " + e.toString());
       }
-      
+
       return false;
-    }
+    },
   };
 }
 
@@ -1010,19 +1181,23 @@ function getYouTubeOAuthService() {
  */
 function debugOAuthStatus() {
   const ui = SpreadsheetApp.getUi();
-  
+
   try {
     const service = getYouTubeOAuthService();
     const hasAccess = service.hasAccess();
-    const token = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
-    const expiry = PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN_EXPIRY");
-    const refreshToken = PropertiesService.getUserProperties().getProperty("YT_REFRESH_TOKEN");
-    
+    const token =
+      PropertiesService.getUserProperties().getProperty("YT_ACCESS_TOKEN");
+    const expiry = PropertiesService.getUserProperties().getProperty(
+      "YT_ACCESS_TOKEN_EXPIRY"
+    );
+    const refreshToken =
+      PropertiesService.getUserProperties().getProperty("YT_REFRESH_TOKEN");
+
     const now = new Date().getTime();
     const expiryTime = expiry ? parseInt(expiry) : 0;
     const isExpired = now >= expiryTime;
-    
-    const debugInfo = 
+
+    const debugInfo =
       `OAuth認証詳細状態:\n\n` +
       `hasAccess(): ${hasAccess}\n` +
       `アクセストークン: ${token ? token.substring(0, 20) + "..." : "なし"}\n` +
@@ -1030,11 +1205,14 @@ function debugOAuthStatus() {
       `期限切れ: ${isExpired}\n` +
       `リフレッシュトークン: ${refreshToken ? "あり" : "なし"}\n` +
       `現在時刻: ${new Date(now).toLocaleString()}`;
-    
-    ui.alert('OAuth認証状態デバッグ', debugInfo, ui.ButtonSet.OK);
-    
+
+    ui.alert("OAuth認証状態デバッグ", debugInfo, ui.ButtonSet.OK);
   } catch (e) {
-    ui.alert('エラー', 'OAuth状態確認中にエラー: ' + e.toString(), ui.ButtonSet.OK);
+    ui.alert(
+      "エラー",
+      "OAuth状態確認中にエラー: " + e.toString(),
+      ui.ButtonSet.OK
+    );
   }
 }
 /**
@@ -1075,23 +1253,23 @@ function updateAPIStatus() {
   try {
     const service = getYouTubeOAuthService();
     const hasAccess = service.hasAccess();
-    
+
     if (hasAccess) {
       const token = service.getAccessToken();
       const maskedToken = token ? token.substring(0, 10) + "..." : "不明";
-      
+
       dashboardSheet
         .getRange("B11")
         .setValue("✅ OAuth認証済み (" + maskedToken + ") - 詳細分析が可能")
         .setFontColor("green");
-        
+
       Logger.log("OAuth認証状態: 認証済み");
     } else {
       dashboardSheet
         .getRange("B11")
         .setValue("⚠️ OAuth未認証 - 基本分析のみ可能")
         .setFontColor("orange");
-        
+
       Logger.log("OAuth認証状態: 未認証");
     }
   } catch (e) {
@@ -1099,7 +1277,7 @@ function updateAPIStatus() {
       .getRange("B11")
       .setValue("❌ OAuth設定エラー: " + e.toString())
       .setFontColor("red");
-      
+
     Logger.log("OAuth認証状態エラー: " + e.toString());
   }
 }
@@ -1307,21 +1485,23 @@ function runChannelAnalysis(silentMode = false) {
 
   // チャンネル入力を取得（D2セルから）
   const channelInput = dashboardSheet
-    .getRange("D2")  // 修正: C2 → D2
+    .getRange("D2") // 修正: C2 → D2
     .getValue()
     .toString()
     .trim();
 
   // プレースホルダーテキストをチェック
-  if (!channelInput || 
-      channelInput === "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" ||
-      channelInput.startsWith("例:")) {
+  if (
+    !channelInput ||
+    channelInput === "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" ||
+    channelInput.startsWith("例:")
+  ) {
     if (!silentMode) {
       ui.alert(
         "入力エラー",
         "チャンネル入力欄に以下のいずれかを入力してください：\n\n" +
-        "• @ハンドル（例: @YouTube）\n" +
-        "• チャンネルID（例: UC-9-kyTW8ZkZNDHQJ6FgpwQ）",
+          "• @ハンドル（例: @YouTube）\n" +
+          "• チャンネルID（例: UC-9-kyTW8ZkZNDHQJ6FgpwQ）",
         ui.ButtonSet.OK
       );
     }
@@ -1336,7 +1516,7 @@ function runChannelAnalysis(silentMode = false) {
 
     const apiKey = getApiKey();
     let channelId;
-    
+
     try {
       channelId = resolveChannelIdentifier(channelInput, apiKey);
 
@@ -1965,7 +2145,7 @@ function protectH7Header(sheet) {
     .setFontWeight("bold")
     .setBackground("#E8F0FE")
     .setHorizontalAlignment("center");
-    
+
   Logger.log("H7見出しを保護しました");
 }
 
@@ -1981,19 +2161,15 @@ function updateDashboardWithChannelInfo(channelInfo) {
   setupDashboardHeaders(dashboardSheet);
 
   // チャンネル名と分析日を表示
-  dashboardSheet
-    .getRange("C3")
-    .setValue(channelInfo.snippet.title);
-  dashboardSheet
-    .getRange("C4")
-    .setValue(new Date());
+  dashboardSheet.getRange("C3").setValue(channelInfo.snippet.title);
+  dashboardSheet.getRange("C4").setValue(new Date());
 
   // 基本的な統計情報を8行目に配置
   dashboardSheet
     .getRange("A8")
     .setValue(parseInt(channelInfo.statistics.subscriberCount || "0"))
     .setNumberFormat("#,##0");
-    
+
   dashboardSheet
     .getRange("B8")
     .setValue(parseInt(channelInfo.statistics.viewCount || "0"))
@@ -2002,7 +2178,7 @@ function updateDashboardWithChannelInfo(channelInfo) {
   // **修正：OAuth認証状態をチェック**
   const service = getYouTubeOAuthService();
   const isAuthenticated = service.hasAccess();
-  
+
   if (isAuthenticated) {
     // 認証済みの場合：詳細データを取得中の表示
     dashboardSheet.getRange("C8").setValue("取得中...");
@@ -2029,10 +2205,7 @@ function updateDashboardWithChannelInfo(channelInfo) {
       .setValue(avgViewsPerVideo)
       .setNumberFormat("#,##0");
   } else {
-    dashboardSheet
-      .getRange("H8")
-      .setValue(0)
-      .setNumberFormat("#,##0");
+    dashboardSheet.getRange("H8").setValue(0).setNumberFormat("#,##0");
   }
 
   // チャンネルアイコンを表示
@@ -2090,7 +2263,11 @@ function updateDashboardWithChannelInfo(channelInfo) {
   // **認証済みの場合、詳細データの取得を開始**
   if (isAuthenticated) {
     try {
-      const channelId = dashboardSheet.getRange(CHANNEL_ID_CELL).getValue().toString().trim();
+      const channelId = dashboardSheet
+        .getRange(CHANNEL_ID_CELL)
+        .getValue()
+        .toString()
+        .trim();
       if (channelId) {
         // Analytics APIから詳細データを取得
         const analyticsData = getChannelAnalytics(channelId, service);
@@ -2136,7 +2313,7 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
 
       // **重要：データは8行目に書き込む**
       sheet
-        .getRange("F8")  // AVERAGE_VIEW_DURATION_CELL相当、8行目
+        .getRange("F8") // AVERAGE_VIEW_DURATION_CELL相当、8行目
         .setValue(`${minutes}:${seconds.toString().padStart(2, "0")}`);
 
       // 登録者関連指標がある場合
@@ -2157,7 +2334,7 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
         const subscriptionRate =
           totalViews > 0 ? (totalSubscribersGained / totalViews) * 100 : 0;
         sheet
-          .getRange("C8")  // SUBSCRIPTION_RATE_CELL相当、8行目
+          .getRange("C8") // SUBSCRIPTION_RATE_CELL相当、8行目
           .setValue(subscriptionRate.toFixed(2) + "%");
       }
 
@@ -2182,18 +2359,18 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
           const overallRetentionRate =
             totalWeightedRetention / totalDeviceViews;
           sheet
-            .getRange("E8")  // RETENTION_RATE_CELL相当、8行目
+            .getRange("E8") // RETENTION_RATE_CELL相当、8行目
             .setValue(overallRetentionRate.toFixed(1) + "%");
         } else {
           const estimatedRetentionRate = 45 + Math.random() * 15;
           sheet
-            .getRange("E8")  // 8行目
+            .getRange("E8") // 8行目
             .setValue(estimatedRetentionRate.toFixed(1) + "%");
         }
       } else {
         const estimatedRetentionRate = 45 + Math.random() * 15;
         sheet
-          .getRange("E8")  // 8行目
+          .getRange("E8") // 8行目
           .setValue(estimatedRetentionRate.toFixed(1) + "%");
       }
 
@@ -2223,20 +2400,29 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
             : 0;
 
         sheet
-          .getRange("D8")  // ENGAGEMENT_RATE_CELL相当、8行目
+          .getRange("D8") // ENGAGEMENT_RATE_CELL相当、8行目
           .setValue(engagementRate.toFixed(2) + "%");
       }
 
       // クリック率を推定 (CTR)
       const estimatedCTR = 10 + Math.random() * 10;
       sheet
-        .getRange("G8")  // CLICK_RATE_CELL相当、8行目
+        .getRange("G8") // CLICK_RATE_CELL相当、8行目
         .setValue(estimatedCTR.toFixed(1) + "%");
     }
 
     // **最後に見出し行を再確認**
-    const allHeaders = ["登録者数", "総再生回数", "登録率", "エンゲージメント率", "視聴維持率", "平均視聴時間", "クリック率", "平均再生回数"];
-    
+    const allHeaders = [
+      "登録者数",
+      "総再生回数",
+      "登録率",
+      "エンゲージメント率",
+      "視聴維持率",
+      "平均視聴時間",
+      "クリック率",
+      "平均再生回数",
+    ];
+
     for (let i = 0; i < allHeaders.length; i++) {
       const cellValue = sheet.getRange(7, i + 1).getValue();
       if (cellValue !== allHeaders[i]) {
@@ -2248,7 +2434,6 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
           .setHorizontalAlignment("center");
       }
     }
-    
   } catch (e) {
     Logger.log("高度な指標の計算に失敗: " + e);
     // エラーがあっても処理を続行
@@ -6813,26 +6998,27 @@ function onEdit(e) {
     const range = e.range;
     const sheet = range.getSheet();
     const value = range.getValue();
-    
+
     // D2セル（チャンネル入力欄）が編集された場合
     if (range.getA1Notation() === "D2") {
       // プレースホルダーでない実際の入力値の場合、書式をリセット
-      if (value && 
-          value !== "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" && 
-          !value.toString().startsWith("例:")) {
-        
+      if (
+        value &&
+        value !== "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" &&
+        !value.toString().startsWith("例:")
+      ) {
         // 書式を通常に戻す
-        range.setFontColor('black');
-        range.setFontStyle('normal');
+        range.setFontColor("black");
+        range.setFontStyle("normal");
       }
       // 空白になった場合、プレースホルダーを再表示
       else if (!value) {
         range.setValue("例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ");
-        range.setFontColor('#999999').setFontStyle('italic');
+        range.setFontColor("#999999").setFontStyle("italic");
       }
     }
   } catch (error) {
-    Logger.log('onEdit エラー: ' + error.toString());
+    Logger.log("onEdit エラー: " + error.toString());
   }
 }
 
@@ -6847,20 +7033,22 @@ function generateCompleteReport() {
 
   // チャンネル入力を確認（D2セルから）
   const channelInput = dashboardSheet
-    .getRange("D2")  // 修正: C2 → D2
+    .getRange("D2") // 修正: C2 → D2
     .getValue()
     .toString()
     .trim();
 
   // プレースホルダーテキストをチェック
-  if (!channelInput || 
-      channelInput === "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" ||
-      channelInput.startsWith("例:")) {
+  if (
+    !channelInput ||
+    channelInput === "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" ||
+    channelInput.startsWith("例:")
+  ) {
     ui.alert(
       "入力エラー",
       "チャンネル入力欄に以下のいずれかを入力してから、完全分析を実行してください：\n\n" +
-      "• @ハンドル（例: @YouTube）\n" +
-      "• チャンネルID（例: UC-9-kyTW8ZkZNDHQJ6FgpwQ）",
+        "• @ハンドル（例: @YouTube）\n" +
+        "• チャンネルID（例: UC-9-kyTW8ZkZNDHQJ6FgpwQ）",
       ui.ButtonSet.OK
     );
     return;

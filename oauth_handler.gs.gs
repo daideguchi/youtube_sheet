@@ -5,7 +5,7 @@ function doGet(e) {
   const code = e.parameter.code;
   const state = e.parameter.state;
   const error = e.parameter.error;
-  
+
   if (error) {
     return HtmlService.createHtmlOutput(`
       <h2>認証エラー</h2>
@@ -13,11 +13,11 @@ function doGet(e) {
       <p>ウィンドウを閉じてスプレッドシートに戻ってください。</p>
     `);
   }
-  
+
   if (code) {
     // 認証コードを一時保存
     PropertiesService.getUserProperties().setProperty("TEMP_AUTH_CODE", code);
-    
+
     return HtmlService.createHtmlOutput(`
       <h2>認証成功!</h2>
       <p>認証コードを取得しました。</p>
@@ -30,7 +30,7 @@ function doGet(e) {
       </script>
     `);
   }
-  
+
   return HtmlService.createHtmlOutput(`
     <h2>OAuth認証</h2>
     <p>認証に必要なパラメータが見つかりません。</p>
