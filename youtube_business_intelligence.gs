@@ -156,40 +156,40 @@ function createBusinessDashboard() {
   dashboard.getRange("A1:M1").merge();
   dashboard.getRange("A1").setValue("🚀 YouTube事業分析システム")
     .setFontSize(24).setFontWeight("bold")
-    .setBackground("#1565c0").setFontColor("white")
+    .setBackground("#f8f9fa").setFontColor("#495057")
     .setHorizontalAlignment("center");
   
   dashboard.getRange("A2:M2").merge();
   dashboard.getRange("A2").setValue("YouTube事業者のための包括的分析・戦略立案プラットフォーム")
     .setFontSize(12).setFontStyle("italic")
-    .setBackground("#bbdefb").setFontColor("#0d47a1")
+    .setBackground("#e9ecef").setFontColor("#6c757d")
     .setHorizontalAlignment("center");
   
   // ========== チャンネル入力エリア ==========
   dashboard.getRange("A4:M4").merge();
   dashboard.getRange("A4").setValue("🎯 分析対象チャンネル設定")
     .setFontSize(16).setFontWeight("bold")
-    .setBackground("#4caf50").setFontColor("white")
+    .setBackground("#dee2e6").setFontColor("#495057")
     .setHorizontalAlignment("center");
   
   dashboard.getRange("A5").setValue("チャンネル入力:");
   dashboard.getRange("B5:G5").merge();
   dashboard.getRange("B5").setValue("@ハンドル名、チャンネルURL、またはチャンネルIDを入力してください")
-    .setBackground("#e8f5e8").setFontColor("#666666").setFontStyle("italic");
+    .setBackground("#f8f9fa").setFontColor("#6c757d").setFontStyle("italic");
   
   dashboard.getRange("H5").setValue("🔍 分析開始")
-    .setBackground("#ff5722").setFontColor("white").setFontWeight("bold")
+    .setBackground("#007bff").setFontColor("white").setFontWeight("bold")
     .setHorizontalAlignment("center");
   
   dashboard.getRange("I5").setValue("🚀 包括分析")
-    .setBackground("#9c27b0").setFontColor("white").setFontWeight("bold")
+    .setBackground("#495057").setFontColor("white").setFontWeight("bold")
     .setHorizontalAlignment("center");
   
   // ========== システム状態表示 ==========
   dashboard.getRange("A7:M7").merge();
   dashboard.getRange("A7").setValue("🔧 システム状態")
     .setFontSize(14).setFontWeight("bold")
-    .setBackground("#607d8b").setFontColor("white")
+    .setBackground("#6c757d").setFontColor("white")
     .setHorizontalAlignment("center");
   
   dashboard.getRange("A8").setValue("YouTube Data API:");
@@ -203,13 +203,13 @@ function createBusinessDashboard() {
   dashboard.getRange("A10:M10").merge();
   dashboard.getRange("A10").setValue("📊 チャンネル分析サマリー")
     .setFontSize(16).setFontWeight("bold")
-    .setBackground("#ff9800").setFontColor("white")
+    .setBackground("#adb5bd").setFontColor("#495057")
     .setHorizontalAlignment("center");
   
   // 基本指標ヘッダー
   const basicHeaders = ["チャンネル名", "登録者数", "総視聴回数", "動画数", "平均視聴回数", "エンゲージメント率", "事業ステージ"];
   dashboard.getRange("A11:G11").setValues([basicHeaders]);
-  dashboard.getRange("A11:G11").setBackground("#ffe0b2").setFontWeight("bold")
+  dashboard.getRange("A11:G11").setBackground("#f1f3f4").setFontWeight("bold")
     .setHorizontalAlignment("center");
   
   dashboard.getRange("A12:G12").setValues([["未分析", "未分析", "未分析", "未分析", "未分析", "未分析", "未分析"]]);
@@ -219,12 +219,12 @@ function createBusinessDashboard() {
   dashboard.getRange("A14:M14").merge();
   dashboard.getRange("A14").setValue("💰 事業KPI・収益分析")
     .setFontSize(16).setFontWeight("bold")
-    .setBackground("#e91e63").setFontColor("white")
+    .setBackground("#ced4da").setFontColor("#495057")
     .setHorizontalAlignment("center");
   
   const businessHeaders = ["収益化状況", "推定月収", "成長率", "市場ポジション", "競合優位性", "事業スコア"];
   dashboard.getRange("A15:F15").setValues([businessHeaders]);
-  dashboard.getRange("A15:F15").setBackground("#fce4ec").setFontWeight("bold")
+  dashboard.getRange("A15:F15").setBackground("#f1f3f4").setFontWeight("bold")
     .setHorizontalAlignment("center");
   
   dashboard.getRange("A16:F16").setValues([["分析待ち", "分析待ち", "分析待ち", "分析待ち", "分析待ち", "分析待ち"]]);
@@ -234,7 +234,7 @@ function createBusinessDashboard() {
   dashboard.getRange("A18:M18").merge();
   dashboard.getRange("A18").setValue("🤖 AI戦略コンサルティング・改善提案")
     .setFontSize(16).setFontWeight("bold")
-    .setBackground("#673ab7").setFontColor("white")
+    .setBackground("#adb5bd").setFontColor("#495057")
     .setHorizontalAlignment("center");
   
   dashboard.getRange("A19:I24").merge();
@@ -252,7 +252,7 @@ function createBusinessDashboard() {
     "• 成長ロードマップ・マイルストーン設定\n" +
     "• リスク評価・対策提案\n\n" +
     "🎯 真に事業に役立つ洞察を提供します"
-  ).setBackground("#ede7f6").setVerticalAlignment("top").setFontSize(11)
+  ).setBackground("#f8f9fa").setVerticalAlignment("top").setFontSize(11)
     .setWrap(true);
   
   // ========== クイックアクション ==========
@@ -272,14 +272,14 @@ function createBusinessDashboard() {
     "🤖 AI戦略提案\n" +
     "　→ 総合コンサル\n\n" +
     "👆 メニューから実行"
-  ).setBackground("#e8f5e8").setVerticalAlignment("top")
+  ).setBackground("#e9ecef").setVerticalAlignment("top")
     .setFontWeight("bold").setFontSize(10).setWrap(true);
   
   // ========== 最新分析履歴 ==========
   dashboard.getRange("A26:M26").merge();
   dashboard.getRange("A26").setValue("📈 最新分析履歴・トレンド")
     .setFontSize(14).setFontWeight("bold")
-    .setBackground("#795548").setFontColor("white")
+    .setBackground("#868e96").setFontColor("white")
     .setHorizontalAlignment("center");
   
   dashboard.getRange("A27:M29").merge();
@@ -287,7 +287,7 @@ function createBusinessDashboard() {
     "📊 分析履歴はまだありません\n\n" +
     "チャンネル分析を実行すると、ここに履歴とトレンドが表示されます。\n" +
     "継続的な分析により、成長パターンや改善効果を追跡できます。"
-  ).setBackground("#efebe9").setVerticalAlignment("top").setFontSize(11);
+  ).setBackground("#f1f3f4").setVerticalAlignment("top").setFontSize(11);
   
   // フォーマット適用
   formatBusinessDashboard(dashboard);
