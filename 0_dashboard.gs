@@ -528,6 +528,18 @@ function executeChannelAnalysis() {
       return;
     }
     
+    // チャンネルIDを解決してB2セルに保存（4_channelCheck.gsとの互換性）
+    try {
+      // 統合ダッシュボード用の簡易チャンネルID解決
+      var resolvedChannelId = resolveChannelIdForDashboard(handle, apiKey);
+      if (resolvedChannelId) {
+        dashboard.getRange("B2").setValue(resolvedChannelId); // CHANNEL_ID_CELL互換
+        Logger.log("統合ダッシュボード: チャンネルID保存 " + resolvedChannelId);
+      }
+    } catch (idError) {
+      Logger.log("チャンネルID解決エラー: " + idError.toString());
+    }
+    
     // 一時的にハンドル名を保存して既存関数を呼び出し
     PropertiesService.getDocumentProperties().setProperty("TEMP_HANDLE", handle);
     
@@ -551,6 +563,36 @@ function executeChannelAnalysis() {
       "分析中にエラーが発生しました: " + error.toString(),
       SpreadsheetApp.getUi().ButtonSet.OK
     );
+  }
+}
+
+/**
+ * 統合ダッシュボード用のチャンネルID解決関数
+ */
+function resolveChannelIdForDashboard(handle, apiKey) {
+  try {
+    // @ハンドル形式をチャンネルIDに変換
+    if (handle.startsWith("@")) {
+      var searchUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + 
+                     encodeURIComponent(handle) + "&type=channel&maxResults=1&key=" + apiKey;
+      
+      var response = UrlFetchApp.fetch(searchUrl);
+      var data = JSON.parse(response.getContentText());
+      
+      if (data.items && data.items.length > 0) {
+        return data.items[0].snippet.channelId;
+      }
+    }
+    
+    // 既にチャンネルID形式の場合
+    if (handle.match(/^UC[\w-]{22}$/)) {
+      return handle;
+    }
+    
+    return null;
+  } catch (e) {
+    Logger.log("チャンネルID解決エラー: " + e.toString());
+    return null;
   }
 }
 
