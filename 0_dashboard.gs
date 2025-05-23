@@ -234,36 +234,44 @@ function formatYouTubeBusinessDashboard(sheet) {
   var sectionHeaders = ["A5", "A12", "A19", "A26", "H5", "H16", "H24"];
   for (var i = 0; i < sectionHeaders.length; i++) {
     sheet.getRange(sectionHeaders[i]).setFontSize(16).setFontWeight("bold")
-      .setBackground("#f8f9fa").setBorder(true, true, true, true);
+      .setBackground("#f8f9fa")
+      .setBorder(true, true, true, true, false, false, "#cccccc", SpreadsheetApp.BorderStyle.SOLID);
   }
   
   // ========== ボタンエリア ==========
   // チャンネル運営管理
-  sheet.getRange("A7:G10").setBorder(true, true, true, true, true, true);
+  sheet.getRange("A7:G10")
+    .setBorder(true, true, true, true, true, true, "#dddddd", SpreadsheetApp.BorderStyle.SOLID);
   sheet.getRange("A7:A10").setBackground("#e8f5e8");
   
   // 競合・市場分析
-  sheet.getRange("A14:G17").setBorder(true, true, true, true, true, true);
+  sheet.getRange("A14:G17")
+    .setBorder(true, true, true, true, true, true, "#dddddd", SpreadsheetApp.BorderStyle.SOLID);
   sheet.getRange("A14:A17").setBackground("#fff3e0");
   
   // 成長戦略・計画
-  sheet.getRange("A21:G24").setBorder(true, true, true, true, true, true);
+  sheet.getRange("A21:G24")
+    .setBorder(true, true, true, true, true, true, "#dddddd", SpreadsheetApp.BorderStyle.SOLID);
   sheet.getRange("A21:A24").setBackground("#f3e5f5");
   
   // ========== データエリア ==========
-  sheet.getRange("H7:L14").setBorder(true, true, true, true, true, true);
+  sheet.getRange("H7:L14")
+    .setBorder(true, true, true, true, true, true, "#dddddd", SpreadsheetApp.BorderStyle.SOLID);
   sheet.getRange("H7:H14").setBackground("#e3f2fd");
   
   // ベンチマークエリア
-  sheet.getRange("H18:L22").setBorder(true, true, true, true, true, true);
+  sheet.getRange("H18:L22")
+    .setBorder(true, true, true, true, true, true, "#dddddd", SpreadsheetApp.BorderStyle.SOLID);
   sheet.getRange("H18:H22").setBackground("#fff8e1");
   
   // アラートエリア
-  sheet.getRange("H26:L28").setBorder(true, true, true, true, true, true);
+  sheet.getRange("H26:L28")
+    .setBorder(true, true, true, true, true, true, "#dddddd", SpreadsheetApp.BorderStyle.SOLID);
   sheet.getRange("H26:H28").setBackground("#ffebee");
   
   // ========== クイックアクセス ==========
-  sheet.getRange("A28:H28").setBorder(true, true, true, true, true, true);
+  sheet.getRange("A28:H28")
+    .setBorder(true, true, true, true, false, false, "#dddddd", SpreadsheetApp.BorderStyle.SOLID);
   
   // ========== 列幅設定 ==========
   sheet.setColumnWidth(1, 45);   // アイコン
