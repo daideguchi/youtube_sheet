@@ -6993,33 +6993,33 @@ function showHelp() {
 /**
  * 編集時のイベントハンドラ - プレースホルダーから通常テキストへの変換を処理（修正版）
  */
-// function onEdit_disabled(e) {
-  try {
-    const range = e.range;
-    const sheet = range.getSheet();
-    const value = range.getValue();
-
-    // D2セル（チャンネル入力欄）が編集された場合
-    if (range.getA1Notation() === "D2") {
-      // プレースホルダーでない実際の入力値の場合、書式をリセット
-      if (
-        value &&
-        value !== "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" &&
-        !value.toString().startsWith("例:")
-      ) {
-        // 書式を通常に戻す
-        range.setFontColor("black");
-        range.setFontStyle("normal");
-      }
-      // 空白になった場合、プレースホルダーを再表示
-      else if (!value) {
-        range.setValue("例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ");
-        range.setFontColor("#999999").setFontStyle("italic");
-      }
-    }
-  } catch (error) {
-    Logger.log("onEdit エラー: " + error.toString());
-  }
+/* // function onEdit_disabled(e) {
+/*   try {
+/*     const range = e.range;
+/*     const sheet = range.getSheet();
+/*     const value = range.getValue();
+/* 
+/*     // D2セル（チャンネル入力欄）が編集された場合
+/*     if (range.getA1Notation() === "D2") {
+/*       // プレースホルダーでない実際の入力値の場合、書式をリセット
+/*       if (
+/*         value &&
+/*         value !== "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" &&
+/*         !value.toString().startsWith("例:")
+/*       ) {
+/*         // 書式を通常に戻す
+/*         range.setFontColor("black");
+/*         range.setFontStyle("normal");
+/*       }
+/*       // 空白になった場合、プレースホルダーを再表示
+/*       else if (!value) {
+/*         range.setValue("例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ");
+/*         range.setFontColor("#999999").setFontStyle("italic");
+/*       }
+/*     }
+/*   } catch (error) {
+/*     Logger.log("onEdit エラー: " + error.toString());
+/*   }
 }
 
 /**
