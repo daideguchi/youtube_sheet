@@ -285,7 +285,10 @@ function updateDashboardDisplay() {
           
           dashboard.getRange("B20").setValue(avgViews.toLocaleString() + " 回/動画");
           dashboard.getRange("B21").setValue(engagementRate.toFixed(2) + "%");
-          dashboard.getRange("B22").setValue(result.score + "/100 (" + result.grade + ")");
+          
+          // 総合評価を計算
+          var overallRating = calculateOverallRating(subscriberNum, engagementRate, videosNum);
+          dashboard.getRange("B22").setValue(overallRating.score + "/100 (" + overallRating.grade + ")");
           
           // チャンネル登録率を新しい行に追加
           dashboard.getRange("A23").setValue("チャンネル登録率:");
