@@ -768,13 +768,19 @@ function processHandles() {
     }
 
     // 統合ダッシュボードの場合は専用処理
-    if (sheetName === "📊 YouTube チャンネル分析") {
-      var channelInput = sheet.getRange("B8").getValue();
+    if (sheetName === "📊 YouTube チャンネル分析" || sheetName === "🎯 事業分析ダッシュボード") {
+      var channelInput = sheet.getRange("B5").getValue(); // B5セルに修正
       
-      if (!channelInput || channelInput.toString().trim() === "" || channelInput === "チャンネルURL or @ハンドル") {
+      if (!channelInput || channelInput.toString().trim() === "" || 
+          channelInput.toString().includes("@ハンドル名、チャンネルURL")) {
         ui.alert(
           "入力エラー",
-          "統合ダッシュボードのB8セルにチャンネルURLまたは@ハンドル名を入力してください。\n\n例: https://www.youtube.com/@YouTube\nまたは: @YouTube",
+          "🎯 事業分析ダッシュボードのB5セルにチャンネル情報を入力してください。\n\n" +
+          "📌 入力形式:\n" +
+          "• @YouTube（ハンドル名）\n" +
+          "• https://www.youtube.com/@YouTube（URL）\n" +
+          "• UCチャンネルID\n\n" +
+          "💡 ヒント: B5セルのプレースホルダーテキストをクリアして入力してください",
           ui.ButtonSet.OK
         );
         return;
@@ -791,8 +797,13 @@ function processHandles() {
         return;
       }
       
-      // 統合ダッシュボード専用の処理を実行
-      executeChannelAnalysis();
+      // プレースホルダーをクリア（次回のため）
+      if (channelInput.toString().includes("@ハンドル名、チャンネルURL")) {
+        sheet.getRange("B5").setValue("");
+      }
+      
+      // 事業分析ダッシュボード専用の分析実行
+      executeBusinessChannelAnalysis(handle, apiKey, sheet);
       return;
     }
 
@@ -2153,4 +2164,149 @@ function runDetailedStatistics() {
     "より詳細な統計情報とグラフが含まれたレポートが作成されます。",
     ui.ButtonSet.OK
   );
+}
+
+/**
+ * 事業分析ダッシュボード専用のチャンネル分析実行
+ */
+function executeBusinessChannelAnalysis(handle, apiKey, dashboard) {
+  var ui = SpreadsheetApp.getUi();
+  
+  try {
+    // 分析開始の確認
+    var response = ui.alert(
+      "🚀 チャンネル分析実行",
+      "チャンネル「" + handle + "」の事業分析を実行しますか？\n\n" +
+      "📊 実行内容:\n" +
+      "• 基本チャンネル情報取得\n" +
+      "• 事業指標分析\n" +
+      "• ダッシュボード更新\n\n" +
+      "⚡ より詳細な分析は「🚀 包括事業分析」メニューから実行できます。",
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (response !== ui.Button.YES) {
+      return;
+    }
+    
+    // 進捗表示
+    dashboard.getRange("E16").setValue("分析中...");
+    SpreadsheetApp.flush();
+    
+    // チャンネル情報を取得
+    var channelInfo = getChannelByHandle(handle, apiKey);
+    if (!channelInfo) {
+      ui.alert(
+        "チャンネル未発見",
+        "指定されたチャンネルが見つかりませんでした: " + handle,
+        ui.ButtonSet.OK
+      );
+      dashboard.getRange("E16").setValue("エラー");
+      return;
+    }
+    
+    // 基本情報を抽出
+    var snippet = channelInfo.snippet;
+    var statistics = channelInfo.statistics;
+    var channelName = snippet.title;
+    var subscribers = parseInt(statistics.subscriberCount || 0);
+    var totalViews = parseInt(statistics.viewCount || 0);
+    var videoCount = parseInt(statistics.videoCount || 0);
+    
+    // 分析指標を計算
+    var avgViews = videoCount > 0 ? Math.round(totalViews / videoCount) : 0;
+    var engagementRate = subscribers > 0 ? ((avgViews / subscribers) * 100).toFixed(2) : 0;
+    
+    // 事業ステージを判定
+    var businessStage = "🌱 新興";
+    if (subscribers >= 1000000) businessStage = "🏆 業界リーダー";
+    else if (subscribers >= 100000) businessStage = "🌟 確立企業";
+    else if (subscribers >= 10000) businessStage = "📈 成長企業";
+    else if (subscribers >= 1000) businessStage = "🚀 スタートアップ";
+    
+    // ダッシュボードを更新
+    updateBusinessDashboardResults(dashboard, {
+      channelName: channelName,
+      subscribers: subscribers,
+      totalViews: totalViews,
+      videoCount: videoCount,
+      avgViews: avgViews,
+      engagementRate: engagementRate,
+      businessStage: businessStage
+    });
+    
+    dashboard.getRange("E16").setValue("完了");
+    
+    ui.alert(
+      "✅ 分析完了",
+      "チャンネル分析が完了しました！\n\n" +
+      "📊 " + channelName + "\n" +
+      "👥 登録者数: " + subscribers.toLocaleString() + "\n" +
+      "📈 エンゲージメント率: " + engagementRate + "%\n" +
+      "🎯 事業ステージ: " + businessStage + "\n\n" +
+      "ダッシュボードが更新されました。\n" +
+      "より詳細な分析は「🚀 包括事業分析」メニューをご利用ください。",
+      ui.ButtonSet.OK
+    );
+    
+  } catch (error) {
+    Logger.log("事業分析エラー: " + error.toString());
+    dashboard.getRange("E16").setValue("エラー");
+    ui.alert(
+      "分析エラー",
+      "チャンネル分析中にエラーが発生しました:\n\n" + error.toString(),
+      ui.ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * 事業ダッシュボードの結果更新
+ */
+function updateBusinessDashboardResults(dashboard, results) {
+  try {
+    // 基本情報更新（A12行）
+    var basicData = [
+      results.channelName,
+      results.subscribers.toLocaleString(),
+      results.totalViews.toLocaleString(),
+      results.videoCount.toLocaleString(),
+      results.avgViews.toLocaleString(),
+      results.engagementRate + "%",
+      results.businessStage
+    ];
+    
+    dashboard.getRange("A12:G12").setValues([basicData]);
+    
+    // 事業KPI更新（A16行）
+    var monetizationStatus = results.subscribers >= 1000 ? "✅ 収益化対象" : "❌ 収益化前";
+    var estimatedRevenue = results.subscribers >= 1000 ? Math.round(results.avgViews * 0.002) + "円/月" : "未収益化";
+    var growthRate = "中程度"; // 簡易判定
+    var marketPosition = results.subscribers >= 100000 ? "上位" : 
+                        results.subscribers >= 10000 ? "中位" : "新興";
+    var competitiveAdvantage = results.engagementRate > 3 ? "高エンゲージメント" : "標準";
+    var businessScore = Math.min(100, Math.round(
+      (results.subscribers / 1000) * 0.3 + 
+      (results.engagementRate * 10) + 
+      (results.avgViews / 1000) * 0.1
+    ));
+    
+    var businessData = [
+      monetizationStatus,
+      estimatedRevenue,
+      growthRate,
+      marketPosition,
+      competitiveAdvantage,
+      businessScore + "/100"
+    ];
+    
+    dashboard.getRange("A16:F16").setValues([businessData]);
+    
+    // 現在のデータ件数を更新
+    dashboard.getRange("B16").setValue("1件");
+    dashboard.getRange("E5").setValue(new Date().toLocaleString());
+    
+  } catch (error) {
+    Logger.log("ダッシュボード更新エラー: " + error.toString());
+  }
 }
