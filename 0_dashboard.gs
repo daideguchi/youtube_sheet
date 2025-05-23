@@ -540,27 +540,50 @@ function executeChannelAnalysis() {
       Logger.log("チャンネルID解決エラー: " + idError.toString());
     }
     
-    // 一時的にハンドル名を保存して既存関数を呼び出し
-    PropertiesService.getDocumentProperties().setProperty("TEMP_HANDLE", handle);
-    
-    // 既存の分析機能を呼び出し
-    analyzeExistingChannel();
-    
-    // 分析完了後、ダッシュボードを更新
-    Utilities.sleep(2000);
-    updateDashboardDisplay();
-    
-    SpreadsheetApp.getUi().alert(
-      "✅ 分析完了",
-      "チャンネル分析が完了しました！\n\nダッシュボードに結果が表示されます。\n詳細は新しく作成された分析シートでご確認ください。",
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
+    // 統合ダッシュボード専用の分析関数を実行
+    try {
+      var result = executeUnifiedChannelAnalysis(handle, apiKey);
+      
+      if (result.success) {
+        // ダッシュボードに結果を反映
+        dashboard.getRange("B15").setValue(result.channelName);
+        dashboard.getRange("B16").setValue(result.subscribers.toLocaleString() + " 人");
+        dashboard.getRange("B17").setValue(result.totalViews.toLocaleString() + " 回");
+        dashboard.getRange("B18").setValue(result.videoCount.toLocaleString() + " 本");
+        
+        var avgViews = result.videoCount > 0 ? Math.round(result.totalViews / result.videoCount) : 0;
+        var engagementRate = result.subscribers > 0 ? (avgViews / result.subscribers * 100) : 0;
+        
+        dashboard.getRange("B20").setValue(avgViews.toLocaleString() + " 回/動画");
+        dashboard.getRange("B21").setValue(engagementRate.toFixed(2) + "%");
+        dashboard.getRange("B22").setValue(result.score + "/100 (" + result.grade + ")");
+        
+        // 改善提案を更新
+        var suggestions = generateImprovementSuggestions(result.subscribers, engagementRate, result.videoCount);
+        dashboard.getRange("A25").setValue(suggestions);
+        
+        SpreadsheetApp.getUi().alert(
+          "✅ 分析完了",
+          "チャンネル分析が完了しました！\n\n• 分析シート: " + result.sheetName + "\n• チャンネル名: " + result.channelName + "\n• 総合スコア: " + result.score + "/100 (" + result.grade + ")",
+          SpreadsheetApp.getUi().ButtonSet.OK
+        );
+      }
+    } catch (analysisError) {
+      dashboard.getRange("B15").setValue("分析エラー");
+      dashboard.getRange("A25").setValue("分析中にエラーが発生しました:\n" + analysisError.toString());
+      
+      SpreadsheetApp.getUi().alert(
+        "分析エラー",
+        "チャンネル分析中にエラーが発生しました:\n\n" + analysisError.toString() + "\n\nAPIキーやネットワーク接続を確認してください。",
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+    }
     
   } catch (error) {
     Logger.log("チャンネル分析実行エラー: " + error.toString());
     SpreadsheetApp.getUi().alert(
-      "分析エラー",
-      "分析中にエラーが発生しました: " + error.toString(),
+      "実行エラー",
+      "分析実行中にエラーが発生しました: " + error.toString(),
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
@@ -899,7 +922,7 @@ function refreshDashboard() {
           var engagementScore = Math.min(30, engagementRate * 5);
           var totalScore = Math.round(subscriberScore + viewScore + engagementScore);
           
-          dashboard.getRange("I10").setValue(totalScore + " / 100");
+          dashboard.getRange("G10").setValue(totalScore + " / 100");
           dashboard.getRange("J10").setValue(
             totalScore >= 80 ? "🟢 優秀" :
             totalScore >= 60 ? "🟡 良好" :
@@ -961,7 +984,7 @@ function generateSimpleSuggestions(subscribers, engagementRate, videoCount) {
   var suggestions = [];
   
   if (subscribers < 1000) {
-    suggestions.push("🎯 収益化条件達成に向けて、登録者1000人を目指しましょう");
+    suggestions.push("🎯 収益化条件達成に向けて登録者1000人を目指しましょう");
   }
   
   if (engagementRate < 2) {
