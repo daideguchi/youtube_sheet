@@ -1,0 +1,17 @@
+# clasp ignore patterns
+*.bak*
+*.md
+Makefile
+auto-commit-rules.sh
+node_modules/
+__tests__/
+.git/
+.vscode/
+.cursor/
+.specstory/
+package*.json
+.eslintrc.json
+test-setup.js
+benchmark-functions.js
+.cursorindexingignore
+.gitignore 

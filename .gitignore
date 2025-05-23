@@ -50,3 +50,4 @@ Thumbs.db
 # APIキーなど（機密情報）
 *.key
 secrets.json
+*.bak*

@@ -1,7 +1,7 @@
 # YouTube Channel Analysis Project - Makefile
 # プロジェクトのGit自動管理とタスク実行用
 
-.PHONY: help rules-commit config-commit watch-files auto-commit push status clean install
+.PHONY: help rules-commit config-commit watch-files auto-commit push status clean install clasp-push clasp-pull clasp-watch clasp-info
 
 # デフォルトターゲット
 help: ## このヘルプメッセージを表示
@@ -14,8 +14,12 @@ help: ## このヘルプメッセージを表示
 	@echo ""
 	@echo "使用例:"
 	@echo "  make rules-commit    # rules.mdcの変更をコミット"
-	@echo "  make watch-files     # ファイル監視モードを開始"
+	@echo "  make clasp-watch     # Google Apps Script自動同期"
 	@echo "  make auto-commit     # 自動コミット実行"
+
+# =============================================================================
+# Git 自動管理コマンド
+# =============================================================================
 
 # rules.mdcファイルの自動コミット
 rules-commit: ## rules.mdcファイルの変更をGitにコミット・プッシュ
@@ -41,6 +45,38 @@ auto-commit: ## 変更ファイルの自動検出・コミット・プッシュ
 push: ## リモートリポジトリに手動プッシュ
 	@echo "⬆️ リモートリポジトリにプッシュします..."
 	@git push origin main
+
+# =============================================================================
+# Google Apps Script (clasp) 管理コマンド
+# =============================================================================
+
+# clasp 手動プッシュ
+clasp-push: ## Google Apps Scriptプロジェクトに手動プッシュ
+	@echo "🚀 Google Apps Scriptにプッシュします..."
+	@chmod +x auto-clasp-sync.sh
+	@./auto-clasp-sync.sh push
+
+# clasp 手動プル
+clasp-pull: ## Google Apps Scriptプロジェクトから手動プル
+	@echo "⬇️ Google Apps Scriptからプルします..."
+	@chmod +x auto-clasp-sync.sh
+	@./auto-clasp-sync.sh pull
+
+# clasp 自動監視
+clasp-watch: ## Google Apps Scriptファイルの自動監視・プッシュ
+	@echo "👀 Google Apps Scriptファイルの自動監視を開始します..."
+	@chmod +x auto-clasp-sync.sh
+	@./auto-clasp-sync.sh watch
+
+# clasp プロジェクト情報
+clasp-info: ## Google Apps Scriptプロジェクト情報を表示
+	@echo "📋 Google Apps Scriptプロジェクト情報..."
+	@chmod +x auto-clasp-sync.sh
+	@./auto-clasp-sync.sh info
+
+# =============================================================================
+# その他のコマンド
+# =============================================================================
 
 # Git状態確認
 status: ## Git状態とプロジェクト情報を表示
@@ -70,7 +106,10 @@ install: ## 必要なツールのインストール確認
 	@echo "Git: $(shell git --version 2>/dev/null || echo '❌ インストールされていません')"
 	@echo "Bash: $(shell bash --version | head -1 2>/dev/null || echo '❌ インストールされていません')"
 	@echo "fswatch: $(shell fswatch --version 2>/dev/null || echo '⚠️ オプション（ファイル監視用）')"
+	@echo "clasp: $(shell clasp --version 2>/dev/null || echo '❌ npm install -g @google/clasp')"
 	@echo ""
+	@echo "💡 clasp をインストールするには:"
+	@echo "   npm install -g @google/clasp"
 	@echo "💡 fswatch をインストールするには:"
 	@echo "   brew install fswatch"
 
@@ -79,7 +118,7 @@ rules-auto: rules-commit ## rules.mdc編集後の推奨操作
 	@echo "✅ rules.mdcファイルの変更が完了しました"
 
 # 開発完了時の一括処理
-dev-complete: auto-commit ## 開発完了時の一括Git操作
+dev-complete: auto-commit clasp-push ## 開発完了時の一括Git・clasp操作
 	@echo "🎉 開発完了処理が完了しました"
 
 # プロジェクト情報表示
@@ -90,9 +129,9 @@ info: ## プロジェクト情報を表示
 	@echo "📁 プロジェクトディレクトリ: $(PWD)"
 	@echo "🌿 Git ブランチ: $(shell git branch --show-current 2>/dev/null || echo 'unknown')"
 	@echo "📝 rules.mdc更新日: $(shell stat -f '%Sm' .cursor/rules/rules.mdc 2>/dev/null || echo '未確認')"
-	@echo "🔧 スクリプト: ./auto-commit-rules.sh"
+	@echo "🔧 Git自動化スクリプト: ./auto-commit-rules.sh"
+	@echo "🚀 clasp自動化スクリプト: ./auto-clasp-sync.sh"
 	@echo ""
 	@echo "📖 使い方:"
-	@echo "  1. rules.mdcを編集"
-	@echo "  2. make rules-commit を実行"
-	@echo "  3. または make watch-files で自動監視" 
+	@echo "  Git: make watch-files で自動監視"
+	@echo "  GAS: make clasp-watch で自動同期" 

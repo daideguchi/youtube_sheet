@@ -32,10 +32,11 @@ const DEBUG_MODE = true; // デバッグモード（詳細なログを出力）
 /**
  * スプレッドシート読み込み時にメニューを初期化（シンプル版）
  */
-// function onOpen_disabled() {
-  createUserInterface();
-  updateAPIStatus();
-}
+/* // function onOpen_disabled() {
+/*   createUserInterface();
+/*   updateAPIStatus();
+/* }
+*/
 
 function createUserInterface() {
   const ui = SpreadsheetApp.getUi();
