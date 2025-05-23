@@ -4,7 +4,7 @@
  * 一つのチャンネルに特化したシンプル分析ツール
  *
  * 作成者: Claude AI
- * バージョン: 3.0
+ * バージョン: 3.1 (修正版)
  * 最終更新: 2025-01-22
  */
 /* eslint-enable */
@@ -267,11 +267,11 @@ function refreshDashboard() {
     if (latestAnalysis) {
       // 最新の分析データを表示
       try {
-        var channelName = latestAnalysis.getRange("C4").getValue();
+        var channelName = latestAnalysis.getRange("C6").getValue() || latestAnalysis.getRange("C4").getValue();
         var subscribers = latestAnalysis.getRange("C14").getValue();
         var totalViews = latestAnalysis.getRange("C15").getValue();
         var videoCount = latestAnalysis.getRange("C16").getValue();
-        var createdDate = latestAnalysis.getRange("C13").getValue();
+        var createdDate = latestAnalysis.getRange("C8").getValue() || latestAnalysis.getRange("C13").getValue();
         
         dashboard.getRange("C10").setValue(channelName || "取得中...");
         dashboard.getRange("C11").setValue(subscribers || "取得中...");
@@ -284,19 +284,18 @@ function refreshDashboard() {
         var viewsNum = extractNumber(totalViews);
         var videosNum = extractNumber(videoCount);
         
-        if (subscriberNum > 0 && viewsNum > 0) {
+        if (subscriberNum > 0 && viewsNum > 0 && videosNum > 0) {
           var avgViews = Math.round(viewsNum / videosNum);
           var engagementRate = (avgViews / subscriberNum * 100);
           
           dashboard.getRange("C15").setValue(avgViews.toLocaleString());
           dashboard.getRange("C16").setValue(engagementRate.toFixed(2) + "%");
           
-          // 総合スコア算出（簡易版）
-          var totalScore = Math.min(100, Math.round(
-            (subscriberNum / 1000) * 0.3 + 
-            (avgViews / 1000) * 0.4 + 
-            engagementRate * 10
-          ));
+          // 総合スコア算出（改善版）
+          var subscriberScore = Math.min(30, Math.log10(subscriberNum) * 10);
+          var viewScore = Math.min(40, Math.log10(avgViews) * 10);
+          var engagementScore = Math.min(30, engagementRate * 5);
+          var totalScore = Math.round(subscriberScore + viewScore + engagementScore);
           
           dashboard.getRange("I10").setValue(totalScore + " / 100");
           dashboard.getRange("J10").setValue(
@@ -312,6 +311,10 @@ function refreshDashboard() {
         
       } catch (e) {
         Logger.log("分析データ表示エラー: " + e.toString());
+        dashboard.getRange("A20").setValue(
+          "分析データの読み込み中にエラーが発生しました。\n" +
+          "再度「基本分析」を実行してください。"
+        );
       }
     } else {
       // 分析データがない場合の初期化
@@ -379,7 +382,7 @@ function generateSimpleSuggestions(subscribers, engagementRate, videoCount) {
 }
 
 /**
- * 基本分析を実行
+ * 基本分析を実行（修正版）
  */
 function runBasicAnalysis() {
   try {
@@ -387,7 +390,11 @@ function runBasicAnalysis() {
     var dashboard = ss.getSheetByName("📊 チャンネル分析");
     
     if (!dashboard) {
-      SpreadsheetApp.getUi().alert("エラー", "ダッシュボードが見つかりません", SpreadsheetApp.getUi().ButtonSet.OK);
+      SpreadsheetApp.getUi().alert(
+        "エラー", 
+        "ダッシュボードが見つかりません", 
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
       return;
     }
     
@@ -417,6 +424,7 @@ function runBasicAnalysis() {
     // 分析実行前の表示更新
     dashboard.getRange("C10").setValue("分析中...");
     dashboard.getRange("A20").setValue("チャンネルデータを取得中です。しばらくお待ちください...");
+    SpreadsheetApp.flush();
     
     // ハンドル名を抽出
     var handle = extractChannelHandle(channelUrl);
@@ -429,24 +437,34 @@ function runBasicAnalysis() {
       return;
     }
     
-    // 既存の分析機能を呼び出し
-    analyzeExistingChannel(handle);
-    
-    // 分析完了後、ダッシュボードを更新
-    Utilities.sleep(2000); // 2秒待機
-    refreshDashboard();
-    
-    SpreadsheetApp.getUi().alert(
-      "分析完了", 
-      "チャンネルの基本分析が完了しました！\n結果をダッシュボードでご確認ください。", 
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
+    // 修正: 正しい関数呼び出し（引数なし）
+    try {
+      // 一時的にハンドル名をプロパティに保存
+      PropertiesService.getDocumentProperties().setProperty("TEMP_HANDLE", handle);
+      
+      // 元の関数を呼び出し
+      analyzeExistingChannel();
+      
+      // 分析完了後、ダッシュボードを更新
+      Utilities.sleep(3000); // 3秒待機
+      refreshDashboard();
+      
+      SpreadsheetApp.getUi().alert(
+        "✅ 分析完了", 
+        "チャンネルの基本分析が完了しました！\n\n結果がダッシュボードに表示されます。\n分析シートも自動作成されました。", 
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+    } catch (analysisError) {
+      dashboard.getRange("C10").setValue("分析失敗");
+      dashboard.getRange("A20").setValue("分析中にエラーが発生しました: " + analysisError.toString());
+      throw analysisError;
+    }
     
   } catch (error) {
     Logger.log("基本分析実行エラー: " + error.toString());
     SpreadsheetApp.getUi().alert(
-      "分析エラー", 
-      "分析中にエラーが発生しました: " + error.toString(), 
+      "❌ 分析エラー", 
+      "分析中にエラーが発生しました:\n\n" + error.toString() + "\n\nAPIキー設定やネットワーク接続を確認してください。", 
       SpreadsheetApp.getUi().ButtonSet.OK
     );
   }
@@ -458,7 +476,8 @@ function runBasicAnalysis() {
 function extractChannelHandle(url) {
   try {
     if (url.includes("/@")) {
-      return url.split("/@")[1].split("/")[0];
+      var handle = url.split("/@")[1].split("/")[0];
+      return "@" + handle;
     } else if (url.includes("/c/")) {
       return url.split("/c/")[1].split("/")[0];
     } else if (url.includes("/channel/")) {
@@ -510,49 +529,4 @@ function showHelp() {
     "シンプルで使いやすい設計です！",
     SpreadsheetApp.getUi().ButtonSet.OK
   );
-}
-
-/**
- * セルクリックイベントハンドラ
- */
-function onEdit(e) {
-  try {
-    var sheet = e.source.getActiveSheet();
-    var range = e.range;
-    
-    // チャンネル分析ダッシュボードでのクリックを処理
-    if (sheet.getName() === "📊 チャンネル分析") {
-      
-      // 基本分析ボタン（I4）のクリック
-      if (range.getRow() === 4 && range.getColumn() === 9) {
-        runBasicAnalysis();
-      }
-      
-      // API設定ボタン（B6）のクリック
-      if (range.getRow() === 6 && range.getColumn() === 2) {
-        setApiKey();
-      }
-      
-      // クイックアクションボタン（25行目の偶数列）のクリック
-      if (range.getRow() === 25) {
-        var col = range.getColumn();
-        if ([2, 4, 6, 8].indexOf(col) !== -1) {
-          var functionName = sheet.getRange(26, col).getValue();
-          
-          if (functionName) {
-            try {
-              if (typeof eval(functionName) === 'function') {
-                eval(functionName + '()');
-              }
-            } catch (error) {
-              Logger.log("クイックアクション実行エラー: " + functionName + " - " + error.toString());
-            }
-          }
-        }
-      }
-    }
-    
-  } catch (error) {
-    Logger.log("onEditエラー: " + error.toString());
-  }
 } 

@@ -350,38 +350,85 @@ function setEditTrigger() {
  */
 function onEdit(e) {
   try {
+    var sheet = e.source.getActiveSheet();
     var range = e.range;
-    var sheet = range.getSheet();
-    var value = range.getValue();
-
-    // A列またはB列が編集された場合
-    if (
-      (range.getColumn() === 1 || range.getColumn() === 2) &&
-      range.getRow() > 1
-    ) {
-      // プレースホルダーでない実際の入力値の場合、書式をリセット
-      if (
-        value &&
-        value !== "例）シニア・自己啓発" &&
-        value !== "@と入力してハンドル名を入力"
-      ) {
-        // 書式を通常に戻す
-        range.setFontColor("black");
-        range.setFontStyle("normal");
+    var sheetName = sheet.getName();
+    
+    // ========== チャンネル分析ダッシュボードでのクリック処理 ==========
+    if (sheetName === "📊 チャンネル分析") {
+      
+      // 基本分析ボタン（I4）のクリック
+      if (range.getRow() === 4 && range.getColumn() === 9) {
+        runBasicAnalysis();
+        return;
       }
-      // 空白になった場合、プレースホルダーを再表示
-      else if (!value) {
-        if (range.getColumn() === 1) {
-          range.setValue("例）シニア・自己啓発");
-          range.setFontColor("#999999").setFontStyle("italic");
-        } else if (range.getColumn() === 2) {
-          range.setValue("@と入力してハンドル名を入力");
-          range.setFontColor("#999999").setFontStyle("italic");
+      
+      // API設定ボタン（B6）のクリック
+      if (range.getRow() === 6 && range.getColumn() === 2) {
+        setApiKey();
+        return;
+      }
+      
+      // クイックアクションボタン（25行目の偶数列）のクリック
+      if (range.getRow() === 25) {
+        var col = range.getColumn();
+        if ([2, 4, 6, 8].indexOf(col) !== -1) {
+          var functionName = sheet.getRange(26, col).getValue();
+          
+          if (functionName) {
+            try {
+              if (typeof eval(functionName) === 'function') {
+                eval(functionName + '()');
+              }
+            } catch (error) {
+              Logger.log("クイックアクション実行エラー: " + functionName + " - " + error.toString());
+            }
+          }
+        }
+        return;
+      }
+    }
+    
+    // ========== 既存のベンチマークダッシュボードでのクリック処理 ==========
+    if (sheetName === "📊 統合ダッシュボード" || sheetName === "🔍 ベンチマーク分析") {
+      
+      // ボタン列（D列）のクリックを検出
+      if (range.getColumn() === 4) {
+        var row = range.getRow();
+        var buttonValue = range.getValue();
+        
+        if (buttonValue === "▶ 実行" || buttonValue === "▶ 開始") {
+          // 対応する関数名を取得（E列）
+          var functionName = sheet.getRange(row, 5).getValue();
+          
+          if (functionName) {
+            try {
+              // 関数を実行
+              if (typeof eval(functionName) === 'function') {
+                eval(functionName + '()');
+              }
+              
+              // 実行後に統計を更新
+              Utilities.sleep(1000); // 1秒待機
+              if (typeof updateDashboardStatistics === 'function') {
+                updateDashboardStatistics();
+              }
+              
+            } catch (error) {
+              Logger.log("関数実行エラー: " + functionName + " - " + error.toString());
+              SpreadsheetApp.getUi().alert(
+                "実行エラー",
+                "機能の実行中にエラーが発生しました: " + error.toString(),
+                SpreadsheetApp.getUi().ButtonSet.OK
+              );
+            }
+          }
         }
       }
     }
+    
   } catch (error) {
-    Logger.log("onEdit エラー: " + error.toString());
+    Logger.log("onEditエラー: " + error.toString());
   }
 }
 
@@ -1348,24 +1395,36 @@ function analyzeExistingChannel() {
       return;
     }
     
-    // チャンネル情報入力ダイアログ
-    var response = ui.prompt(
-      "既存チャンネル分析",
-      "分析したいチャンネルのハンドル名を入力してください（@から始まる）\n例: @YouTube",
-      ui.ButtonSet.OK_CANCEL
-    );
+    // ダッシュボードから一時保存されたハンドル名をチェック
+    var tempHandle = PropertiesService.getDocumentProperties().getProperty("TEMP_HANDLE");
+    var handle;
     
-    if (response.getSelectedButton() == ui.Button.OK) {
-      var handle = response.getResponseText().trim();
+    if (tempHandle) {
+      // ダッシュボードから呼び出された場合、一時保存されたハンドル名を使用
+      handle = tempHandle;
+      PropertiesService.getDocumentProperties().deleteProperty("TEMP_HANDLE"); // 使用後削除
+    } else {
+      // 直接呼び出された場合、ダイアログで入力を求める
+      var response = ui.prompt(
+        "既存チャンネル分析",
+        "分析したいチャンネルのハンドル名を入力してください（@から始まる）\n例: @YouTube",
+        ui.ButtonSet.OK_CANCEL
+      );
+      
+      if (response.getSelectedButton() != ui.Button.OK) {
+        return; // キャンセルされた場合は終了
+      }
+      
+      handle = response.getResponseText().trim();
       
       if (!handle.startsWith("@")) {
         ui.alert("エラー", "ハンドル名は@から始まる必要があります。", ui.ButtonSet.OK);
         return;
       }
-      
-      // 分析シートを作成
-      createChannelAnalysisSheet(handle, apiKey);
     }
+    
+    // 分析シートを作成
+    createChannelAnalysisSheet(handle, apiKey);
     
   } catch (error) {
     Logger.log("既存チャンネル分析エラー: " + error.toString());
