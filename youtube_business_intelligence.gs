@@ -101,6 +101,7 @@ function createBusinessIntelligenceMenu() {
   // === ユーティリティ ===
   menu.addSeparator();
   menu.addItem("🏠 ダッシュボード初期化", "resetDashboard");
+  menu.addItem("🎨 ダッシュボード色更新", "refreshBusinessDashboardColors");
   menu.addItem("📖 活用ガイド", "showBusinessGuide");
   menu.addItem("🔧 システム診断", "runSystemDiagnostics");
   
@@ -1088,5 +1089,44 @@ function runSystemDiagnostics() {
     troubleshootAPIs();
   } else {
     SpreadsheetApp.getUi().alert("システム診断", "システム診断を実行中...", SpreadsheetApp.getUi().ButtonSet.OK);
+  }
+}
+
+/**
+ * 🎨 ダッシュボード色設定を強制更新
+ */
+function refreshBusinessDashboardColors() {
+  const ui = SpreadsheetApp.getUi();
+  
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // 既存のダッシュボードを削除
+    const existingDashboard = ss.getSheetByName(MAIN_DASHBOARD);
+    if (existingDashboard) {
+      ss.deleteSheet(existingDashboard);
+    }
+    
+    // 新しいダッシュボードを再作成
+    const newDashboard = createBusinessDashboard();
+    updateSystemStatus();
+    
+    ui.alert(
+      "✅ ダッシュボード色更新完了",
+      "新しい目に優しい色設定でダッシュボードを再作成しました。\n\n" +
+      "🎨 更新内容:\n" +
+      "• 明るい色 → 落ち着いたグレー系\n" +
+      "• 目に優しい配色\n" +
+      "• 統一されたデザイン",
+      ui.ButtonSet.OK
+    );
+    
+  } catch (error) {
+    Logger.log("ダッシュボード色更新エラー: " + error.toString());
+    ui.alert(
+      "更新エラー",
+      "ダッシュボード色更新中にエラーが発生しました:\n\n" + error.toString(),
+      ui.ButtonSet.OK
+    );
   }
 } 

@@ -153,7 +153,7 @@ function setupDashboardHeaders(dashboardSheet) {
     .setFontSize(16)
     .setFontWeight("bold")
     .setHorizontalAlignment("center")
-    .setBackground("#4285F4")
+    .setBackground("#6c757d")
     .setFontColor("white");
 
   // 入力セクション（1つに統一）
@@ -161,7 +161,7 @@ function setupDashboardHeaders(dashboardSheet) {
     .getRange("A2")
     .setValue("チャンネル入力（@ハンドル または チャンネルID）:")
     .setFontWeight("bold")
-    .setBackground("#E8F0FE");
+    .setBackground("#f1f3f4");
 
   // 入力欄（D2からF2をマージして使用）
   dashboardSheet.getRange("D2:F2").merge().setBackground("#F8F9FA");
@@ -189,7 +189,7 @@ function setupDashboardHeaders(dashboardSheet) {
     .setValue("主要パフォーマンス指標")
     .setFontSize(14)
     .setFontWeight("bold")
-    .setBackground("#4285F4")
+    .setBackground("#6c757d")
     .setFontColor("white")
     .setHorizontalAlignment("center");
 
@@ -198,43 +198,43 @@ function setupDashboardHeaders(dashboardSheet) {
     .getRange("A7")
     .setValue("登録者数")
     .setFontWeight("bold")
-    .setBackground("#E8F0FE")
+    .setBackground("#f1f3f4")
     .setHorizontalAlignment("center");
   dashboardSheet
     .getRange("B7")
     .setValue("総再生回数")
     .setFontWeight("bold")
-    .setBackground("#E8F0FE")
+    .setBackground("#f1f3f4")
     .setHorizontalAlignment("center");
   dashboardSheet
     .getRange("C7")
     .setValue("登録率")
     .setFontWeight("bold")
-    .setBackground("#E8F0FE")
+    .setBackground("#f1f3f4")
     .setHorizontalAlignment("center");
   dashboardSheet
     .getRange("D7")
     .setValue("エンゲージメント率")
     .setFontWeight("bold")
-    .setBackground("#E8F0FE")
+    .setBackground("#f1f3f4")
     .setHorizontalAlignment("center");
   dashboardSheet
     .getRange("E7")
     .setValue("視聴維持率")
     .setFontWeight("bold")
-    .setBackground("#E8F0FE")
+    .setBackground("#f1f3f4")
     .setHorizontalAlignment("center");
   dashboardSheet
     .getRange("F7")
     .setValue("平均視聴時間")
     .setFontWeight("bold")
-    .setBackground("#E8F0FE")
+    .setBackground("#f1f3f4")
     .setHorizontalAlignment("center");
   dashboardSheet
     .getRange("G7")
     .setValue("クリック率")
     .setFontWeight("bold")
-    .setBackground("#E8F0FE")
+    .setBackground("#f1f3f4")
     .setHorizontalAlignment("center");
 
   // **特にH7を強力に保護**
@@ -242,7 +242,7 @@ function setupDashboardHeaders(dashboardSheet) {
     .getRange("H7")
     .setValue("平均再生回数")
     .setFontWeight("bold")
-    .setBackground("#E8F0FE")
+    .setBackground("#f1f3f4")
     .setHorizontalAlignment("center");
 
   // データ行を準備
@@ -254,7 +254,7 @@ function setupDashboardHeaders(dashboardSheet) {
     .merge()
     .setValue("API接続状態")
     .setFontWeight("bold")
-    .setBackground("#4285F4")
+    .setBackground("#6c757d")
     .setFontColor("white")
     .setHorizontalAlignment("center");
 
@@ -268,7 +268,7 @@ function setupDashboardHeaders(dashboardSheet) {
     .merge()
     .setValue("分析手順")
     .setFontWeight("bold")
-    .setBackground("#4285F4")
+    .setBackground("#6c757d")
     .setFontColor("white")
     .setHorizontalAlignment("center");
 
@@ -456,7 +456,7 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
           .getRange(7, i + 1)
           .setValue(allHeaders[i])
           .setFontWeight("bold")
-          .setBackground("#E8F0FE")
+          .setBackground("#f1f3f4")
           .setHorizontalAlignment("center");
       }
     }
@@ -1291,7 +1291,7 @@ function showProgressDialog(message, percentComplete) {
     `<div style="text-align: center; padding: 20px;">
        <h3 style="margin-top: 10px; margin-bottom: 20px;">${message}</h3>
        <div style="margin: 20px auto; width: 300px; background-color: #f1f1f1; border-radius: 5px;">
-         <div style="width: ${percentComplete}%; height: 20px; background-color: #4285F4; border-radius: 5px;"></div>
+         <div style="width: ${percentComplete}%; height: 20px; background-color: #6c757d; border-radius: 5px;"></div>
        </div>
        <p style="margin-top: 10px;">${percentComplete}% 完了</p>
      </div>`
@@ -1465,7 +1465,7 @@ function showProgressDialog(message, percentComplete) {
     `<div style="text-align: center; padding: 20px;">
        <h3>${message}</h3>
        <div style="margin: 20px auto; width: 300px; background-color: #f1f1f1; border-radius: 5px;">
-         <div style="width: ${percentComplete}%; height: 20px; background-color: #4285F4; border-radius: 5px;"></div>
+         <div style="width: ${percentComplete}%; height: 20px; background-color: #6c757d; border-radius: 5px;"></div>
        </div>
        <p>${percentComplete}% 完了</p>
      </div>`
@@ -2144,7 +2144,7 @@ function protectH7Header(sheet) {
     .getRange("H7")
     .setValue("平均再生回数")
     .setFontWeight("bold")
-    .setBackground("#E8F0FE")
+    .setBackground("#f1f3f4")
     .setHorizontalAlignment("center");
 
   Logger.log("H7見出しを保護しました");
@@ -2241,7 +2241,7 @@ function updateDashboardWithChannelInfo(channelInfo) {
     .getRange("H7")
     .setValue("平均再生回数")
     .setFontWeight("bold")
-    .setBackground("#E8F0FE")
+    .setBackground("#f1f3f4")
     .setHorizontalAlignment("center");
 
   // チャンネル説明
@@ -2250,7 +2250,7 @@ function updateDashboardWithChannelInfo(channelInfo) {
     .merge()
     .setValue("チャンネル概要")
     .setFontWeight("bold")
-    .setBackground("#4285F4")
+    .setBackground("#6c757d")
     .setFontColor("white")
     .setHorizontalAlignment("center");
 
@@ -2431,7 +2431,7 @@ function calculateAdvancedMetrics(analyticsData, sheet) {
           .getRange(7, i + 1)
           .setValue(allHeaders[i])
           .setFontWeight("bold")
-          .setBackground("#E8F0FE")
+          .setBackground("#f1f3f4")
           .setHorizontalAlignment("center");
       }
     }
@@ -2830,7 +2830,7 @@ function analyzeVideoPerformance(silentMode = false) {
       .setFontSize(16)
       .setFontWeight("bold")
       .setHorizontalAlignment("center")
-      .setBackground("#4285F4")
+      .setBackground("#6c757d")
       .setFontColor("white");
 
     // サブヘッダー - チャンネル情報（ダッシュボードから取得した情報のみ使用）
@@ -2999,7 +2999,7 @@ function analyzeVideoPerformance(silentMode = false) {
       .getRange("A4:K4")
       .setValues(headers)
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // 行の高さ（サムネイル用）
@@ -3340,7 +3340,7 @@ function analyzeAudience(silentMode = false) {
       .setFontSize(16)
       .setFontWeight("bold")
       .setHorizontalAlignment("center")
-      .setBackground("#4285F4")
+      .setBackground("#6c757d")
       .setFontColor("white");
 
     // サブヘッダー - チャンネル情報（ダッシュボードから取得した情報のみ使用）
@@ -3615,7 +3615,7 @@ function analyzeAudience(silentMode = false) {
       .merge()
       .setValue("地域別視聴者データ")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
     currentRow++;
 
@@ -3686,7 +3686,7 @@ function analyzeAudience(silentMode = false) {
       .merge()
       .setValue("デバイスタイプ別視聴者データ")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
     currentRow++;
 
@@ -3757,7 +3757,7 @@ function analyzeAudience(silentMode = false) {
       .merge()
       .setValue("年齢・性別別視聴者データ")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
     currentRow++;
 
@@ -3812,7 +3812,7 @@ function analyzeAudience(silentMode = false) {
           .merge()
           .setValue("性別合計")
           .setFontWeight("bold")
-          .setBackground("#E8F0FE")
+          .setBackground("#f1f3f4")
           .setHorizontalAlignment("center");
         currentRow++;
 
@@ -3909,7 +3909,7 @@ function analyzeAudience(silentMode = false) {
       .merge()
       .setValue("曜日別視聴傾向データ")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
     currentRow++;
 
@@ -3987,7 +3987,7 @@ function analyzeAudience(silentMode = false) {
       .merge()
       .setValue("トラフィックソース別データ")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
     currentRow++;
 
@@ -4182,7 +4182,7 @@ function analyzeEngagement(silentMode = false) {
       .setFontSize(16)
       .setFontWeight("bold")
       .setHorizontalAlignment("center")
-      .setBackground("#4285F4")
+      .setBackground("#6c757d")
       .setFontColor("white");
 
     // サブヘッダー - チャンネル情報（ダッシュボードから取得した情報のみ使用）
@@ -4413,7 +4413,7 @@ function analyzeEngagement(silentMode = false) {
       .merge()
       .setValue("総合エンゲージメント指標")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // データの集計
@@ -4513,7 +4513,7 @@ function analyzeEngagement(silentMode = false) {
       .merge()
       .setValue("日別エンゲージメントトレンド")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     if (dailyData.rows && dailyData.rows.length > 0) {
@@ -4641,7 +4641,7 @@ function analyzeEngagement(silentMode = false) {
       .merge()
       .setValue("曜日別エンゲージメント傾向")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     if (weekdayData && weekdayData.rows && weekdayData.rows.length > 0) {
@@ -4756,7 +4756,7 @@ function analyzeEngagement(silentMode = false) {
       .merge()
       .setValue("動画別エンゲージメントパフォーマンス")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     if (videoEngagementData.rows && videoEngagementData.rows.length > 0) {
@@ -5002,7 +5002,7 @@ function analyzeTrafficSources(silentMode = false) {
       .setFontSize(16)
       .setFontWeight("bold")
       .setHorizontalAlignment("center")
-      .setBackground("#4285F4")
+      .setBackground("#6c757d")
       .setFontColor("white");
 
     // サブヘッダー - チャンネル情報（ダッシュボードから取得した情報のみ使用）
@@ -5106,7 +5106,7 @@ function analyzeTrafficSources(silentMode = false) {
       .merge()
       .setValue("トラフィックソースタイプ別視聴データ")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // ヘッダー行
@@ -5225,7 +5225,7 @@ function analyzeTrafficSources(silentMode = false) {
       .merge()
       .setValue("詳細トラフィックソースデータ")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // ヘッダー行
@@ -5338,7 +5338,7 @@ function analyzeTrafficSources(silentMode = false) {
       .merge()
       .setValue("外部サイトからのトラフィック")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // ヘッダー行
@@ -5429,7 +5429,7 @@ function analyzeTrafficSources(silentMode = false) {
       .merge()
       .setValue("トラフィックソース分析と改善提案")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     if (trafficData.rows && trafficData.rows.length > 0) {
@@ -5735,7 +5735,7 @@ function generateAIRecommendations(silentMode = false) {
       .setFontSize(16)
       .setFontWeight("bold")
       .setHorizontalAlignment("center")
-      .setBackground("#4285F4")
+      .setBackground("#6c757d")
       .setFontColor("white");
 
     // サブヘッダー - チャンネル情報（ダッシュボードから取得した情報のみ使用）
@@ -5950,7 +5950,7 @@ function generateAIRecommendations(silentMode = false) {
       .merge()
       .setValue("チャンネル概要")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // チャンネルの基本情報
@@ -6054,7 +6054,7 @@ function generateAIRecommendations(silentMode = false) {
       .merge()
       .setValue("指標評価（良好な基準との比較）")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // テーブルヘッダー
@@ -6157,7 +6157,7 @@ function generateAIRecommendations(silentMode = false) {
       .merge()
       .setValue("AI総合評価と改善提案")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // 総合評価（5段階）
@@ -6416,7 +6416,7 @@ function generateAIRecommendations(silentMode = false) {
       .merge()
       .setValue("具体的な改善提案")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // 改善提案の直接生成（関数呼び出しではなく）
@@ -6555,7 +6555,7 @@ function generateAIRecommendations(silentMode = false) {
       .merge()
       .setValue("最適なアップロードスケジュール")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // 視聴者データに基づく最適な投稿曜日と時間の分析
@@ -6602,7 +6602,7 @@ function generateAIRecommendations(silentMode = false) {
       .merge()
       .setValue("今すぐできる3つのアクション")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // 即時アクションの選定
@@ -7230,7 +7230,7 @@ function createAnalysisHistorySheet() {
       .setFontSize(16)
       .setFontWeight("bold")
       .setHorizontalAlignment("center")
-      .setBackground("#4285F4")
+      .setBackground("#6c757d")
       .setFontColor("white");
 
     // 説明文
@@ -7265,7 +7265,7 @@ function createAnalysisHistorySheet() {
       .getRange("A3:Q3")
       .setValues([headers])
       .setFontWeight("bold")
-      .setBackground("#E8F0FE");
+      .setBackground("#f1f3f4");
 
     // 列幅の調整
     const columnWidths = [
@@ -7493,7 +7493,7 @@ function generateHistoryCharts(historySheet) {
       .merge()
       .setValue("チャンネル成長トレンド（時系列グラフ）")
       .setFontWeight("bold")
-      .setBackground("#E8F0FE")
+      .setBackground("#f1f3f4")
       .setHorizontalAlignment("center");
 
     // 1. 登録者数と総再生回数の推移
@@ -7568,7 +7568,7 @@ function generateHistoryCharts(historySheet) {
         .merge()
         .setValue("成長率分析（前回分析との比較）")
         .setFontWeight("bold")
-        .setBackground("#E8F0FE")
+        .setBackground("#f1f3f4")
         .setHorizontalAlignment("center");
 
       // 最新データと前回データを比較

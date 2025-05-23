@@ -26,6 +26,7 @@ function onOpen_benchmark() {
   menu.addItem("📊 個別チャンネル分析", "analyzeExistingChannel");
   menu.addItem("🔍 ベンチマーク分析", "showBenchmarkDashboard");
   menu.addSeparator();
+  menu.addItem("🎨 ダッシュボード色更新", "refreshDashboardColors");
   menu.addItem("シートテンプレート作成", "setupBasicSheet");
   menu.addItem("使い方ガイドを表示", "showHelpSheet");
   menu.addToUi();
@@ -183,9 +184,9 @@ function setupBenchmarkDashboard(dashboard) {
     .setBackground("#ced4da").setFontColor("#495057")
     .setHorizontalAlignment("center");
     
-  dashboard.getRange("A15").setValue("ハンドル名入力:");
+  dashboard.getRange("A15").setValue("データ入力方法:");
   dashboard.getRange("B15:D15").merge();
-  dashboard.getRange("B15").setValue("@YouTubeハンドル名をB列に入力してください")
+  dashboard.getRange("B15").setValue("このダッシュボードでは個別チャンネル分析を実行できます。複数チャンネル比較はデータシートのB列をご利用ください")
     .setBackground("#f8f9fa").setFontStyle("italic");
     
   dashboard.getRange("A16").setValue("現在のデータ:");
@@ -2304,5 +2305,41 @@ function updateBusinessDashboardResults(dashboard, results) {
     
   } catch (error) {
     Logger.log("ダッシュボード更新エラー: " + error.toString());
+  }
+}
+
+/**
+ * ダッシュボードを強制的に再作成（新しい色設定適用）
+ */
+function refreshDashboardColors() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var dashboardName = "📊 YouTube ベンチマーク管理";
+    
+    // 既存のダッシュボードを削除
+    var existingDashboard = ss.getSheetByName(dashboardName);
+    if (existingDashboard) {
+      ss.deleteSheet(existingDashboard);
+    }
+    
+    // 新しいダッシュボードを作成
+    var newDashboard = ss.insertSheet(dashboardName, 0);
+    setupBenchmarkDashboard(newDashboard);
+    ss.setActiveSheet(newDashboard);
+    updateBenchmarkDashboardStatus(newDashboard);
+    
+    SpreadsheetApp.getUi().alert(
+      "ダッシュボード更新完了",
+      "新しい色設定でダッシュボードを再作成しました。",
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    
+  } catch (error) {
+    Logger.log("ダッシュボード再作成エラー: " + error.toString());
+    SpreadsheetApp.getUi().alert(
+      "エラー",
+      "ダッシュボードの再作成中にエラーが発生しました: " + error.toString(),
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
   }
 }
