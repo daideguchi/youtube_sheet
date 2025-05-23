@@ -6993,7 +6993,7 @@ function showHelp() {
 /**
  * 編集時のイベントハンドラ - プレースホルダーから通常テキストへの変換を処理（修正版）
  */
-// function onEdit_disabled(e) {
+function onEdit(e) {
   try {
     const range = e.range;
     const sheet = range.getSheet();

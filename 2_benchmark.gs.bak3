@@ -348,7 +348,7 @@ function setEditTrigger() {
 /**
  * 編集時のイベントハンドラ - 統合ダッシュボード対応版
  */
-/* function onEdit_disabled(e) {
+function onEdit(e) {
   try {
     var sheet = e.source.getActiveSheet();
     var range = e.range;
@@ -427,7 +427,6 @@ function setEditTrigger() {
     Logger.log("onEditエラー: " + error.toString());
   }
 }
-*/
 
 /**
  * テスト関数 - YouTube APIが正しく動作しているか確認

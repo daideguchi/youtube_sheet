@@ -1089,4 +1089,151 @@ function showHelp() {
     "シンプルで使いやすい設計です！",
     SpreadsheetApp.getUi().ButtonSet.OK
   );
+}
+
+/**
+ * スプレッドシート開始時に統合ダッシュボードをセットアップ
+ */
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  
+  // メインメニュー
+  var menu = ui.createMenu("YouTube ツール");
+  menu.addItem("🏠 統合ダッシュボード", "createOrShowMainDashboard");
+  menu.addSeparator();
+  menu.addItem("① API設定・テスト", "setApiKey");
+  menu.addItem("② チャンネル情報取得", "processHandles");
+  menu.addItem("③ ベンチマークレポート作成", "createBenchmarkReport");
+  menu.addSeparator();
+  menu.addItem("📊 個別チャンネル分析", "analyzeExistingChannel");
+  menu.addItem("🔍 ベンチマーク分析", "showBenchmarkDashboard");
+  menu.addSeparator();
+  menu.addItem("シートテンプレート作成", "setupBasicSheet");
+  menu.addItem("使い方ガイドを表示", "showHelpSheet");
+  menu.addSeparator();
+  menu.addItem("🔧 ダッシュボード再作成", "recreateDashboard");
+  menu.addItem("🧪 入力検証テスト", "testInputValidation");
+  menu.addToUi();
+  
+  // 統合ダッシュボードを作成または表示
+  createOrShowMainDashboard();
+}
+
+/**
+ * セル編集イベントハンドラー - 統合ダッシュボード専用
+ */
+function onEdit(e) {
+  try {
+    var sheet = e.source.getActiveSheet();
+    var range = e.range;
+    var sheetName = sheet.getName();
+    var value = range.getValue();
+    var row = range.getRow();
+    var col = range.getColumn();
+    
+    // 統合ダッシュボードでの処理のみ
+    if (sheetName === "📊 YouTube チャンネル分析") {
+      
+      // B9セル（操作セル）でのコマンド入力処理
+      if (row === 9 && col === 2) {
+        if (value && value.toString().trim() !== "" && 
+            value.toString().trim() !== "ここに「分析」と入力してEnter") {
+          
+          // 一旦セルをクリアして処理中表示
+          range.setValue("処理中...");
+          SpreadsheetApp.flush();
+          
+          // コマンドを実行
+          handleQuickAction(value);
+        }
+        return;
+      }
+      
+      // B8セル（チャンネル入力）のプレースホルダー処理
+      if (row === 8 && col === 2) {
+        if (value && value.toString().trim() !== "" && 
+            value.toString().trim() !== "チャンネルURL or @ハンドル") {
+          // 入力検証
+          var normalizedInput = normalizeChannelInput(value.toString());
+          if (normalizedInput) {
+            // 有効な入力の場合、背景色を変更
+            range.setBackground("#e8f5e8");
+            range.setFontColor("#2e7d32");
+          } else {
+            // 無効な入力の場合、エラー色
+            range.setBackground("#ffebee");
+            range.setFontColor("#c62828");
+            SpreadsheetApp.getUi().alert(
+              "入力形式エラー",
+              "以下のいずれかの形式で入力してください：\n\n" +
+              "• @ハンドル（例: @YouTube）\n" +
+              "• チャンネルURL（例: https://www.youtube.com/@YouTube）\n" +
+              "• チャンネルID（例: UC-9-kyTW8ZkZNDHQJ6FgpwQ）",
+              SpreadsheetApp.getUi().ButtonSet.OK
+            );
+          }
+        }
+        return;
+      }
+    }
+    
+  } catch (error) {
+    Logger.log("onEdit エラー: " + error.toString());
+  }
+}
+
+/**
+ * チャンネル入力検証の改善版
+ */
+function normalizeChannelInput(input) {
+  try {
+    if (!input || typeof input !== 'string') return null;
+    
+    input = input.trim();
+    if (input === "" || input === "チャンネルURL or @ハンドル") return null;
+    
+    // YouTube URL形式の場合
+    if (input.includes("youtube.com")) {
+      // @ハンドル形式のURL
+      if (input.includes("/@")) {
+        var handle = input.split("/@")[1].split("/")[0].split("?")[0];
+        return "@" + handle;
+      }
+      // /c/ 形式のURL
+      else if (input.includes("/c/")) {
+        var handle = input.split("/c/")[1].split("/")[0].split("?")[0];
+        return "@" + handle;
+      }
+      // /channel/ 形式のURL (チャンネルID)
+      else if (input.includes("/channel/")) {
+        var channelId = input.split("/channel/")[1].split("/")[0].split("?")[0];
+        if (channelId.startsWith("UC") && channelId.length === 24) {
+          return channelId;
+        }
+      }
+    }
+    
+    // @ハンドル形式の場合
+    if (input.startsWith("@")) {
+      var handle = input.substring(1);
+      if (handle.length > 0 && /^[a-zA-Z0-9._-]+$/.test(handle)) {
+        return input;
+      }
+    }
+    
+    // チャンネルIDの場合
+    if (input.startsWith("UC") && input.length === 24 && /^[a-zA-Z0-9_-]+$/.test(input)) {
+      return input;
+    }
+    
+    // その他の場合は@を付加してハンドルとして扱う
+    if (input.length > 0 && /^[a-zA-Z0-9._-]+$/.test(input)) {
+      return "@" + input;
+    }
+    
+    return null;
+  } catch (e) {
+    Logger.log("入力正規化エラー: " + e.toString());
+    return null;
+  }
 } 
