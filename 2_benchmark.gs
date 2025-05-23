@@ -129,19 +129,19 @@ function setupBenchmarkDashboard(dashboard) {
   dashboard.getRange("A1:J1").merge();
   dashboard.getRange("A1").setValue("📊 YouTube ベンチマーク分析システム")
     .setFontSize(18).setFontWeight("bold")
-    .setBackground("#f8f9fa").setFontColor("#495057")
+    .setBackground("#e3f2fd").setFontColor("#1565c0")
     .setHorizontalAlignment("center");
     
   dashboard.getRange("A2:J2").merge();
   dashboard.getRange("A2").setValue("チャンネル情報の取得・分析・ベンチマークレポート作成")
-    .setFontSize(12).setBackground("#e9ecef")
+    .setFontSize(12).setBackground("#f5f5f5")
     .setHorizontalAlignment("center");
     
   // システム状態
   dashboard.getRange("A4:J4").merge();
   dashboard.getRange("A4").setValue("🔧 システム状態")
     .setFontSize(14).setFontWeight("bold")
-    .setBackground("#dee2e6").setFontColor("#495057")
+    .setBackground("#e8f5e8").setFontColor("#2e7d32")
     .setHorizontalAlignment("center");
     
   dashboard.getRange("A5").setValue("API状態:");
@@ -153,7 +153,7 @@ function setupBenchmarkDashboard(dashboard) {
   dashboard.getRange("A7:J7").merge();
   dashboard.getRange("A7").setValue("⚡ クイックアクション")
     .setFontSize(14).setFontWeight("bold")
-    .setBackground("#adb5bd").setFontColor("#495057")
+    .setBackground("#fff3e0").setFontColor("#f57c00")
     .setHorizontalAlignment("center");
     
   var actions = [
@@ -172,49 +172,57 @@ function setupBenchmarkDashboard(dashboard) {
     dashboard.getRange(row, 4, 1, 5).merge();
     dashboard.getRange(row, 4).setValue(actions[i][2]);
     dashboard.getRange(row, 9).setValue("▶ 実行")
-      .setBackground("#007bff").setFontColor("white").setFontWeight("bold")
+      .setBackground("#4caf50").setFontColor("white").setFontWeight("bold")
       .setHorizontalAlignment("center");
     dashboard.getRange(row, 10).setValue(actions[i][3]); // 関数名（非表示）
   }
   
   // データ入力エリア
   dashboard.getRange("A14:J14").merge();
-  dashboard.getRange("A14").setValue("📊 チャンネルデータ入力")
+  dashboard.getRange("A14").setValue("📊 チャンネル分析方法")
     .setFontSize(14).setFontWeight("bold")
-    .setBackground("#ced4da").setFontColor("#495057")
+    .setBackground("#f3e5f5").setFontColor("#7b1fa2")
     .setHorizontalAlignment("center");
     
-  dashboard.getRange("A15").setValue("データ入力方法:");
+  dashboard.getRange("A15").setValue("🎯 個別分析:");
   dashboard.getRange("B15:D15").merge();
-  dashboard.getRange("B15").setValue("このダッシュボードでは個別チャンネル分析を実行できます。複数チャンネル比較はデータシートのB列をご利用ください")
-    .setBackground("#f8f9fa").setFontStyle("italic");
+  dashboard.getRange("B15").setValue("上記の「④ 個別分析」ボタンから1つのチャンネルを詳細分析")
+    .setBackground("#e8f5e8").setFontStyle("italic");
     
-  dashboard.getRange("A16").setValue("現在のデータ:");
-  dashboard.getRange("B16").setValue("0件");
-  dashboard.getRange("D16").setValue("処理状況:");
-  dashboard.getRange("E16").setValue("待機中");
+  dashboard.getRange("A16").setValue("📊 複数比較:");
+  dashboard.getRange("B16:D16").merge();
+  dashboard.getRange("B16").setValue("別シートのB列に@ハンドル名リストを入力→「② チャンネル取得」")
+    .setBackground("#fff3e0").setFontStyle("italic");
+  
+  dashboard.getRange("A17").setValue("処理状況:");
+  dashboard.getRange("B17").setValue("待機中");
   
   // 統計情報エリア
-  dashboard.getRange("A18:J18").merge();
-  dashboard.getRange("A18").setValue("📈 統計情報")
+  dashboard.getRange("A19:J19").merge();
+  dashboard.getRange("A19").setValue("📈 統計情報")
     .setFontSize(14).setFontWeight("bold")
-    .setBackground("#868e96").setFontColor("white")
+    .setBackground("#e0f2f1").setFontColor("#00695c")
     .setHorizontalAlignment("center");
     
-  var stats = [
-    ["取得済みチャンネル数:", "0件"],
-    ["平均登録者数:", "未計算"],
-    ["最高登録者数:", "未計算"],
-    ["最新レポート:", "未作成"]
-  ];
+  dashboard.getRange("A20").setValue("取得済みチャンネル数:");
+  dashboard.getRange("B20").setValue("0件");
+  dashboard.getRange("D20").setValue("平均登録者数:");
+  dashboard.getRange("E20").setValue("未計算");
   
-  for (var i = 0; i < stats.length; i++) {
-    var row = 19 + i;
-    dashboard.getRange(row, 1, 1, 2).merge();
-    dashboard.getRange(row, 1).setValue(stats[i][0]);
-    dashboard.getRange(row, 3, 1, 2).merge();
-    dashboard.getRange(row, 3).setValue(stats[i][1]);
-  }
+  dashboard.getRange("A21").setValue("最高登録者数:");
+  dashboard.getRange("B21").setValue("未計算");
+  dashboard.getRange("D21").setValue("最新レポート:");
+  dashboard.getRange("E21").setValue("未作成");
+  
+  dashboard.getRange("A22").setValue("総視聴回数:");
+  dashboard.getRange("B22").setValue("計算中...");
+  dashboard.getRange("D22").setValue("処理状況:");
+  dashboard.getRange("E22").setValue("待機中");
+  
+  dashboard.getRange("A23").setValue("動画本数:");
+  dashboard.getRange("B23").setValue("計算中...");
+  dashboard.getRange("D23").setValue("処理状況:");
+  dashboard.getRange("E23").setValue("待機中");
   
   // フォーマット
   formatBenchmarkDashboard(dashboard);
@@ -273,7 +281,7 @@ function updateBenchmarkDashboardStatus(dashboard) {
       }
     }
     
-    dashboard.getRange("B16").setValue(dataCount + "件");
+    dashboard.getRange("B20").setValue(dataCount + "件");
     dashboard.getRange("E5").setValue(new Date().toLocaleString());
     
   } catch (error) {
@@ -362,9 +370,9 @@ function showHelpSheet() {
     helpSheet.setColumnWidth(3, 500);
 
     // ヘッダー行の色設定
-    helpSheet.getRange("A1:C1").setBackground("#f8f9fa").setFontColor("#495057");
-    helpSheet.getRange("A3:C3").setBackground("#E0E0E0");
-    helpSheet.getRange("A9:C9").setBackground("#E0E0E0");
+    helpSheet.getRange("A1:C1").setBackground("#e3f2fd").setFontColor("#1565c0");
+    helpSheet.getRange("A3:C3").setBackground("#e8f5e8");
+    helpSheet.getRange("A9:C9").setBackground("#e8f5e8");
 
     // シートをアクティブに
     ss.setActiveSheet(helpSheet);
@@ -1918,19 +1926,19 @@ function setupBenchmarkAnalysisDashboard(dashboard) {
   dashboard.getRange("A1:J1").merge();
   dashboard.getRange("A1").setValue("🔍 YouTube ベンチマーク分析ダッシュボード")
     .setFontSize(18).setFontWeight("bold")
-    .setBackground("#f8f9fa").setFontColor("#495057")
+    .setBackground("#e3f2fd").setFontColor("#1565c0")
     .setHorizontalAlignment("center");
     
   dashboard.getRange("A2:J2").merge();
   dashboard.getRange("A2").setValue("取得済みチャンネルデータの統計分析・比較・ランキング表示")
-    .setFontSize(12).setBackground("#e9ecef")
+    .setFontSize(12).setBackground("#f5f5f5")
     .setHorizontalAlignment("center");
     
   // データサマリー
   dashboard.getRange("A4:J4").merge();
   dashboard.getRange("A4").setValue("📊 データサマリー")
     .setFontSize(14).setFontWeight("bold")
-    .setBackground("#dee2e6").setFontColor("#495057")
+    .setBackground("#e8f5e8").setFontColor("#2e7d32")
     .setHorizontalAlignment("center");
     
   var summaryLabels = [
@@ -1951,20 +1959,20 @@ function setupBenchmarkAnalysisDashboard(dashboard) {
   dashboard.getRange("A10:J10").merge();
   dashboard.getRange("A10").setValue("🏆 登録者数トップランキング")
     .setFontSize(14).setFontWeight("bold")
-    .setBackground("#adb5bd").setFontColor("#495057")
+    .setBackground("#fff3e0").setFontColor("#f57c00")
     .setHorizontalAlignment("center");
     
   var rankingHeaders = ["順位", "チャンネル名", "ハンドル", "登録者数", "視聴回数", "動画数", "カテゴリ"];
   for (var i = 0; i < rankingHeaders.length; i++) {
     dashboard.getRange(11, i + 1).setValue(rankingHeaders[i]).setFontWeight("bold")
-      .setBackground("#f1f3f4").setHorizontalAlignment("center");
+      .setBackground("#e8f5e8").setHorizontalAlignment("center");
   }
   
   // 分析アクション
   dashboard.getRange("A18:J18").merge();
   dashboard.getRange("A18").setValue("⚡ 分析アクション")
     .setFontSize(14).setFontWeight("bold")
-    .setBackground("#ced4da").setFontColor("#495057")
+    .setBackground("#f3e5f5").setFontColor("#7b1fa2")
     .setHorizontalAlignment("center");
     
   var analysisActions = [
@@ -1982,7 +1990,7 @@ function setupBenchmarkAnalysisDashboard(dashboard) {
     dashboard.getRange(row, 4, 1, 5).merge();
     dashboard.getRange(row, 4).setValue(analysisActions[i][2]);
     dashboard.getRange(row, 9).setValue("▶ 実行")
-      .setBackground("#007bff").setFontColor("white").setFontWeight("bold")
+      .setBackground("#4caf50").setFontColor("white").setFontWeight("bold")
       .setHorizontalAlignment("center");
     dashboard.getRange(row, 10).setValue(analysisActions[i][3]); // 関数名
   }
