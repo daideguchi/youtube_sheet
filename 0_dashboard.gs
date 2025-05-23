@@ -281,13 +281,15 @@ function updateDashboardDisplay() {
         if (subscriberNum > 0 && viewsNum > 0 && videosNum > 0) {
           var avgViews = Math.round(viewsNum / videosNum);
           var engagementRate = (avgViews / subscriberNum * 100);
+          var subscriberRate = viewsNum > 0 ? (subscriberNum / viewsNum * 100) : 0;
           
-          dashboard.getRange("B20").setValue(avgViews.toLocaleString());
+          dashboard.getRange("B20").setValue(avgViews.toLocaleString() + " 回/動画");
           dashboard.getRange("B21").setValue(engagementRate.toFixed(2) + "%");
+          dashboard.getRange("B22").setValue(result.score + "/100 (" + result.grade + ")");
           
-          // 総合評価
-          var rating = calculateOverallRating(subscriberNum, engagementRate, videosNum);
-          dashboard.getRange("B22").setValue(rating.score + "/100 (" + rating.grade + ")");
+          // チャンネル登録率を新しい行に追加
+          dashboard.getRange("A23").setValue("チャンネル登録率:");
+          dashboard.getRange("B23").setValue(subscriberRate.toFixed(4) + "%");
           
           // 改善提案を生成
           var suggestions = generateImprovementSuggestions(subscriberNum, engagementRate, videosNum);
@@ -553,10 +555,15 @@ function executeChannelAnalysis() {
         
         var avgViews = result.videoCount > 0 ? Math.round(result.totalViews / result.videoCount) : 0;
         var engagementRate = result.subscribers > 0 ? (avgViews / result.subscribers * 100) : 0;
+        var subscriberRate = result.totalViews > 0 ? (result.subscribers / result.totalViews * 100) : 0;
         
         dashboard.getRange("B20").setValue(avgViews.toLocaleString() + " 回/動画");
         dashboard.getRange("B21").setValue(engagementRate.toFixed(2) + "%");
         dashboard.getRange("B22").setValue(result.score + "/100 (" + result.grade + ")");
+        
+        // チャンネル登録率を新しい行に追加
+        dashboard.getRange("A23").setValue("チャンネル登録率:");
+        dashboard.getRange("B23").setValue(subscriberRate.toFixed(4) + "%");
         
         // 改善提案を更新
         var suggestions = generateImprovementSuggestions(result.subscribers, engagementRate, result.videoCount);
@@ -912,8 +919,9 @@ function refreshDashboard() {
         if (subscriberNum > 0 && viewsNum > 0 && videosNum > 0) {
           var avgViews = Math.round(viewsNum / videosNum);
           var engagementRate = (avgViews / subscriberNum * 100);
+          var subscriberRate = viewsNum > 0 ? (subscriberNum / viewsNum * 100) : 0;
           
-          dashboard.getRange("C15").setValue(avgViews.toLocaleString());
+          dashboard.getRange("C15").setValue(avgViews.toLocaleString() + " 回/動画");
           dashboard.getRange("C16").setValue(engagementRate.toFixed(2) + "%");
           
           // 総合スコア算出（改善版）
@@ -928,6 +936,10 @@ function refreshDashboard() {
             totalScore >= 60 ? "🟡 良好" :
             totalScore >= 40 ? "🟠 普通" : "🔴 要改善"
           );
+          
+          // チャンネル登録率を新しい行に追加
+          dashboard.getRange("A23").setValue("チャンネル登録率:");
+          dashboard.getRange("B23").setValue(subscriberRate.toFixed(4) + "%");
           
           // 改善提案を生成
           var suggestions = generateSimpleSuggestions(subscriberNum, engagementRate, videosNum);
@@ -988,13 +1000,11 @@ function generateSimpleSuggestions(subscribers, engagementRate, videoCount) {
   }
   
   if (engagementRate < 2) {
-    suggestions.push("📈 エンゲージメント率向上のため、視聴者とのコミュニケーションを増やしましょう");
+    suggestions.push("📈 エンゲージメント率向上のためコミュニケーションを活発化");
   }
   
   if (videoCount < 10) {
     suggestions.push("🎬 定期的な投稿でコンテンツ数を増やしましょう");
-  } else if (videoCount > 100) {
-    suggestions.push("✨ 豊富なコンテンツを活かし、プレイリスト整理で視聴しやすくしましょう");
   }
   
   if (engagementRate > 5) {
@@ -1062,27 +1072,55 @@ function runBasicAnalysis() {
       return;
     }
     
-    // 修正: 正しい関数呼び出し（引数なし）
+    // 統合ダッシュボード専用の分析関数を使用
     try {
-      // 一時的にハンドル名をプロパティに保存
-      PropertiesService.getDocumentProperties().setProperty("TEMP_HANDLE", handle);
+      var result = executeUnifiedChannelAnalysis(handle, apiKey);
       
-      // 元の関数を呼び出し
-      analyzeExistingChannel();
-      
-      // 分析完了後、ダッシュボードを更新
-      Utilities.sleep(3000); // 3秒待機
-      refreshDashboard();
-      
-      SpreadsheetApp.getUi().alert(
-        "✅ 分析完了", 
-        "チャンネルの基本分析が完了しました！\n\n結果がダッシュボードに表示されます。\n分析シートも自動作成されました。", 
-        SpreadsheetApp.getUi().ButtonSet.OK
-      );
+      if (result.success) {
+        // ダッシュボードに結果を反映
+        dashboard.getRange("C10").setValue(result.channelName);
+        dashboard.getRange("C11").setValue(result.subscribers.toLocaleString() + " 人");
+        dashboard.getRange("C12").setValue(result.totalViews.toLocaleString() + " 回");
+        dashboard.getRange("C13").setValue(result.videoCount.toLocaleString() + " 本");
+        
+        var avgViews = result.videoCount > 0 ? Math.round(result.totalViews / result.videoCount) : 0;
+        var engagementRate = result.subscribers > 0 ? (avgViews / result.subscribers * 100) : 0;
+        var subscriberRate = result.totalViews > 0 ? (result.subscribers / result.totalViews * 100) : 0;
+        
+        dashboard.getRange("C15").setValue(avgViews.toLocaleString() + " 回/動画");
+        dashboard.getRange("C16").setValue(engagementRate.toFixed(2) + "%");
+        
+        // パフォーマンス評価を更新
+        dashboard.getRange("I10").setValue(result.score + "/100");
+        dashboard.getRange("J10").setValue(
+          result.score >= 80 ? "🟢 優秀" :
+          result.score >= 60 ? "🟡 良好" :
+          result.score >= 40 ? "🟠 普通" : "🔴 要改善"
+        );
+        
+        // チャンネル登録率を新しい行に追加
+        dashboard.getRange("A23").setValue("チャンネル登録率:");
+        dashboard.getRange("B23").setValue(subscriberRate.toFixed(4) + "%");
+        
+        // 改善提案を生成
+        var suggestions = generateSimpleSuggestions(result.subscribers, engagementRate, result.videoCount);
+        dashboard.getRange("A20").setValue(suggestions);
+        
+        SpreadsheetApp.getUi().alert(
+          "✅ 分析完了", 
+          "チャンネル分析が完了しました！\n\n• チャンネル名: " + result.channelName + "\n• 総合スコア: " + result.score + "/100 (" + result.grade + ")\n• 分析シート: " + result.sheetName, 
+          SpreadsheetApp.getUi().ButtonSet.OK
+        );
+      }
     } catch (analysisError) {
       dashboard.getRange("C10").setValue("分析失敗");
       dashboard.getRange("A20").setValue("分析中にエラーが発生しました: " + analysisError.toString());
-      throw analysisError;
+      
+      SpreadsheetApp.getUi().alert(
+        "❌ 分析エラー", 
+        "分析中にエラーが発生しました:\n\n" + analysisError.toString() + "\n\nAPIキーやネットワーク接続を確認してください。", 
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
     }
     
   } catch (error) {
@@ -1170,7 +1208,7 @@ function onOpen() {
   menu.addItem("② チャンネル情報取得", "processHandles");
   menu.addItem("③ ベンチマークレポート作成", "createBenchmarkReport");
   menu.addSeparator();
-  menu.addItem("📊 個別チャンネル分析", "analyzeExistingChannel");
+  menu.addItem("📊 個別チャンネル分析", "executeChannelAnalysis");
   menu.addItem("🔍 ベンチマーク分析", "showBenchmarkDashboard");
   menu.addSeparator();
   menu.addItem("シートテンプレート作成", "setupBasicSheet");
