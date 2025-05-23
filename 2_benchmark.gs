@@ -29,16 +29,16 @@ function onOpen_benchmark() {
     // === 詳細モード（従来機能全て表示） ===
     menu.addItem("🏠 統合ダッシュボード", "createOrShowMainDashboard");
     menu.addSeparator();
-    menu.addItem("① API設定・テスト", "setApiKey");
-    menu.addItem("② チャンネル情報取得", "processHandles");
-    menu.addItem("③ ベンチマークレポート作成", "createBenchmarkReport");
-    menu.addSeparator();
+  menu.addItem("① API設定・テスト", "setApiKey");
+  menu.addItem("② チャンネル情報取得", "processHandles");
+  menu.addItem("③ ベンチマークレポート作成", "createBenchmarkReport");
+  menu.addSeparator();
     menu.addItem("📊 個別チャンネル分析", "analyzeExistingChannel");
     menu.addItem("🔍 ベンチマーク分析", "showBenchmarkDashboard");
     menu.addSeparator();
     menu.addItem("🎨 ダッシュボード色更新", "refreshDashboardColors");
-    menu.addItem("シートテンプレート作成", "setupBasicSheet");
-    menu.addItem("使い方ガイドを表示", "showHelpSheet");
+  menu.addItem("シートテンプレート作成", "setupBasicSheet");
+  menu.addItem("使い方ガイドを表示", "showHelpSheet");
     menu.addItem("⚙️ シンプルモードに切り替え", "enableBenchmarkSimpleMode");
   }
   
@@ -598,7 +598,7 @@ function setEditTrigger() {
     var range = e.range;
     var sheetName = sheet.getName();
     var value = range.getValue();
-    
+
     // ========== 統合ダッシュボードでのコマンド処理 ==========
     if (sheetName === "📊 YouTube チャンネル分析") {
       
@@ -637,7 +637,7 @@ function setEditTrigger() {
                 updateDashboardStatistics();
               }
               
-            } catch (error) {
+  } catch (error) {
               Logger.log("関数実行エラー: " + functionName + " - " + error.toString());
               SpreadsheetApp.getUi().alert(
                 "実行エラー",
@@ -913,19 +913,19 @@ function processHandles() {
         // YouTube APIを使ってチャンネル情報を取得
         var channelInfo = getChannelByHandle(handle, apiKey);
 
-        if (channelInfo) {
+      if (channelInfo) {
           // 成功した場合、データをスプレッドシートに書き込む
           var snippet = channelInfo.snippet;
           var statistics = channelInfo.statistics;
 
           sheet.getRange(row, 3).setValue(snippet.title); // チャンネル名
-          sheet
+        sheet
             .getRange(row, 4)
             .setValue(parseInt(statistics.subscriberCount).toLocaleString()); // 登録者数
-          sheet
+        sheet
             .getRange(row, 5)
             .setValue(parseInt(statistics.viewCount).toLocaleString()); // 総視聴回数
-          sheet
+        sheet
             .getRange(row, 6)
             .setValue(parseInt(statistics.videoCount).toLocaleString()); // 動画数
           sheet.getRange(row, 7).setValue(snippet.publishedAt); // 開設日
@@ -943,18 +943,18 @@ function processHandles() {
             }
           }
 
-          successCount++;
-        } else {
-          // 失敗した場合、エラーメッセージを表示
-          sheet.getRange(row, 3).setValue("チャンネルが見つかりません");
-          sheet.getRange(row, 4, 1, 7).setValue(""); // 他のセルをクリア
-          errorCount++;
-        }
+        successCount++;
+      } else {
+        // 失敗した場合、エラーメッセージを表示
+        sheet.getRange(row, 3).setValue("チャンネルが見つかりません");
+        sheet.getRange(row, 4, 1, 7).setValue(""); // 他のセルをクリア
+        errorCount++;
+      }
 
-        // 処理状況を更新
-        var progress = Math.round(((i + 1) / handles.length) * 100);
-        statusCell.setValue(progress + "%");
-        SpreadsheetApp.flush(); // 画面を更新
+      // 処理状況を更新
+      var progress = Math.round(((i + 1) / handles.length) * 100);
+      statusCell.setValue(progress + "%");
+      SpreadsheetApp.flush(); // 画面を更新
       } catch (error) {
         Logger.log("チャンネル処理エラー(" + handle + "): " + error.toString());
         sheet.getRange(row, 3).setValue("処理エラー");
@@ -2122,7 +2122,7 @@ function updateBenchmarkAnalysisData(dashboard) {
       // 平均登録者数計算
       var totalSubscribers = channelData.reduce(function(sum, channel) {
         return sum + channel.subscribers;
-      }, 0);
+  }, 0);
       var avgSubscribers = Math.round(totalSubscribers / channelData.length);
       dashboard.getRange("C6").setValue(avgSubscribers.toLocaleString());
       
@@ -2158,7 +2158,7 @@ function updateBenchmarkAnalysisData(dashboard) {
         dashboard.getRange(row, 1, 1, 7).clearContent();
       }
       
-    } else {
+  } else {
       dashboard.getRange("C6").setValue("データなし");
       dashboard.getRange("C7").setValue("データなし");
       dashboard.getRange("A12:G16").clearContent();
