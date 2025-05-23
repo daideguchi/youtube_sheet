@@ -50,6 +50,11 @@ const INDUSTRY_BENCHMARKS = {
 function onOpen() {
   createBusinessIntelligenceMenu();
   initializeBusinessDashboard();
+  
+  // 既存のベンチマークシステムも利用可能にする
+  if (typeof onOpen_benchmark === 'function') {
+    onOpen_benchmark();
+  }
 }
 
 /**
