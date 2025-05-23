@@ -9,30 +9,71 @@
  */
 /* eslint-enable */
 
-// スプレッドシートのUIにメニューを追加
+// スプレッドシートのUIにメニューを追加（シンプル/詳細切り替え対応）
 function onOpen_benchmark() {
   var ui = SpreadsheetApp.getUi();
+  var simpleMode = PropertiesService.getDocumentProperties().getProperty("BENCHMARK_SIMPLE_MODE") !== "false";
 
-  // メインメニュー
   var menu = ui.createMenu("📊 YouTube ベンチマーク");
 
-  // 統合ダッシュボードを最優先で表示
-  menu.addItem("🏠 統合ダッシュボード", "createOrShowMainDashboard");
-  menu.addSeparator();
-  menu.addItem("① API設定・テスト", "setApiKey");
-  menu.addItem("② チャンネル情報取得", "processHandles");
-  menu.addItem("③ ベンチマークレポート作成", "createBenchmarkReport");
-  menu.addSeparator();
-  menu.addItem("📊 個別チャンネル分析", "analyzeExistingChannel");
-  menu.addItem("🔍 ベンチマーク分析", "showBenchmarkDashboard");
-  menu.addSeparator();
-  menu.addItem("🎨 ダッシュボード色更新", "refreshDashboardColors");
-  menu.addItem("シートテンプレート作成", "setupBasicSheet");
-  menu.addItem("使い方ガイドを表示", "showHelpSheet");
+  if (simpleMode) {
+    // === シンプルモード ===
+    menu.addItem("⚙️ API設定", "setApiKey");
+    menu.addItem("🔍 チャンネル分析", "analyzeExistingChannel");
+    menu.addItem("📊 複数チャンネル取得", "processHandles");
+    menu.addItem("📈 レポート作成", "createBenchmarkReport");
+    menu.addSeparator();
+    menu.addItem("📖 使い方ガイド", "showHelpSheet");
+    menu.addItem("⚙️ 詳細モードに切り替え", "enableBenchmarkSimpleMode");
+  } else {
+    // === 詳細モード（従来機能全て表示） ===
+    menu.addItem("🏠 統合ダッシュボード", "createOrShowMainDashboard");
+    menu.addSeparator();
+    menu.addItem("① API設定・テスト", "setApiKey");
+    menu.addItem("② チャンネル情報取得", "processHandles");
+    menu.addItem("③ ベンチマークレポート作成", "createBenchmarkReport");
+    menu.addSeparator();
+    menu.addItem("📊 個別チャンネル分析", "analyzeExistingChannel");
+    menu.addItem("🔍 ベンチマーク分析", "showBenchmarkDashboard");
+    menu.addSeparator();
+    menu.addItem("🎨 ダッシュボード色更新", "refreshDashboardColors");
+    menu.addItem("シートテンプレート作成", "setupBasicSheet");
+    menu.addItem("使い方ガイドを表示", "showHelpSheet");
+    menu.addItem("⚙️ シンプルモードに切り替え", "enableBenchmarkSimpleMode");
+  }
+  
   menu.addToUi();
 
-  // 初回実行時または統合ダッシュボードがない場合は作成
+  // 初回実行時にダッシュボード作成
   createOrShowMainDashboard();
+}
+
+/**
+ * 🎯 ベンチマークシステム シンプルモード切り替え
+ */
+function enableBenchmarkSimpleMode() {
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.alert(
+    "シンプルモード切り替え",
+    "ベンチマークシステムのメニューをシンプルにしますか？\n\n" +
+    "✅ シンプルモード:\n" +
+    "・API設定\n" +
+    "・チャンネル分析\n" +
+    "・複数チャンネル取得\n" +
+    "・レポート作成\n" +
+    "・使い方ガイド\n\n" +
+    "❌ 詳細モード:\n" +
+    "・全ての機能とダッシュボード機能",
+    ui.ButtonSet.YES_NO
+  );
+  
+  if (response === ui.Button.YES) {
+    PropertiesService.getDocumentProperties().setProperty("BENCHMARK_SIMPLE_MODE", "true");
+    ui.alert("設定完了", "シンプルモードが有効になりました。\nページを再読み込みしてください。", ui.ButtonSet.OK);
+  } else {
+    PropertiesService.getDocumentProperties().setProperty("BENCHMARK_SIMPLE_MODE", "false");
+    ui.alert("設定完了", "詳細モードが有効になりました。\nページを再読み込みしてください。", ui.ButtonSet.OK);
+  }
 }
 
 /**

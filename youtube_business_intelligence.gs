@@ -58,52 +58,72 @@ function onOpen() {
 }
 
 /**
- * 📊 YouTube事業分析メニュー作成
+ * 📊 YouTube事業分析メニュー作成（シンプル/詳細切り替え対応）
  */
 function createBusinessIntelligenceMenu() {
   const ui = SpreadsheetApp.getUi();
+  const simpleMode = PropertiesService.getDocumentProperties().getProperty("SIMPLE_MODE") !== "false";
   
   const menu = ui.createMenu("🚀 YouTube事業分析");
   
-  // === 設定・認証 ===
-  menu.addItem("⚙️ システム設定", "setupSystemConfiguration");
-  menu.addItem("🔍 認証状態確認", "checkSystemStatus");
-  menu.addSeparator();
-  
-  // === メイン分析機能 ===
-  menu.addItem("🎯 包括事業分析", "executeComprehensiveBusinessAnalysis");
-  menu.addItem("⚡ クイック分析", "executeQuickBusinessAnalysis");
-  menu.addSeparator();
-  
-  // === 専門分析モジュール ===
-  const advancedMenu = ui.createMenu("📊 専門分析");
-  advancedMenu.addItem("💰 収益・事業性分析", "analyzeBusinessMetrics");
-  advancedMenu.addItem("🎬 コンテンツ戦略分析", "analyzeContentStrategy");
-  advancedMenu.addItem("🏆 競合・市場分析", "analyzeMarketPosition");
-  advancedMenu.addItem("👥 視聴者分析", "executeAudienceAnalysis");
-  advancedMenu.addItem("🔍 SEO・発見性分析", "analyzeSEOPerformance");
-  advancedMenu.addItem("📈 成長トレンド分析", "analyzeGrowthTrends");
-  menu.addSubMenu(advancedMenu);
-  
-  // === AI戦略・提案 ===
-  menu.addSeparator();
-  menu.addItem("🤖 AI戦略コンサルティング", "generateAIBusinessStrategy");
-  menu.addItem("🗺️ 成長ロードマップ作成", "createGrowthRoadmap");
-  
-  // === ベンチマーク・比較 ===
-  menu.addSeparator();
-  const benchmarkMenu = ui.createMenu("📈 ベンチマーク分析");
-  benchmarkMenu.addItem("🏆 業界ベンチマーク比較", "createIndustryBenchmark");
-  benchmarkMenu.addItem("⚖️ 複数チャンネル比較", "executeMultiChannelComparison");
-  benchmarkMenu.addItem("📊 競合ランキング", "createCompetitorRanking");
-  menu.addSubMenu(benchmarkMenu);
-  
-  // === ユーティリティ ===
-  menu.addSeparator();
-  menu.addItem("🏠 ダッシュボード初期化", "resetDashboard");
-  menu.addItem("🎨 ダッシュボード色更新", "refreshBusinessDashboardColors");
-  menu.addItem("📖 活用ガイド", "showBusinessGuide");
-  menu.addItem("🔧 システム診断", "runSystemDiagnostics");
+  if (simpleMode) {
+    // === シンプルモード ===
+    menu.addItem("⚙️ 初期設定", "setupSystemConfiguration");
+    menu.addItem("🎯 チャンネル分析", "executeComprehensiveBusinessAnalysis");
+    menu.addSeparator();
+    
+    // 詳細機能はサブメニューに整理
+    const advancedMenu = ui.createMenu("🔧 詳細分析");
+    advancedMenu.addItem("💰 収益分析", "analyzeBusinessMetrics");
+    advancedMenu.addItem("🎬 コンテンツ戦略", "analyzeContentStrategy");
+    advancedMenu.addItem("🏆 競合分析", "analyzeMarketPosition");
+    advancedMenu.addItem("👥 視聴者分析", "executeAudienceAnalysis");
+    advancedMenu.addItem("📈 成長分析", "analyzeGrowthTrends");
+    advancedMenu.addItem("🤖 AI戦略提案", "generateAIBusinessStrategy");
+    menu.addSubMenu(advancedMenu);
+    
+    menu.addSeparator();
+    menu.addItem("📖 使い方ガイド", "showBusinessGuide");
+    menu.addItem("🔧 システム診断", "runSystemDiagnostics");
+    menu.addItem("⚙️ 詳細モードに切り替え", "enableSimpleMode");
+    
+  } else {
+    // === 詳細モード（従来通り） ===
+    menu.addItem("⚙️ システム設定", "setupSystemConfiguration");
+    menu.addItem("🔍 認証状態確認", "checkSystemStatus");
+    menu.addSeparator();
+    
+    menu.addItem("🎯 包括事業分析", "executeComprehensiveBusinessAnalysis");
+    menu.addItem("⚡ クイック分析", "executeQuickBusinessAnalysis");
+    menu.addSeparator();
+    
+    const advancedMenu = ui.createMenu("📊 専門分析");
+    advancedMenu.addItem("💰 収益・事業性分析", "analyzeBusinessMetrics");
+    advancedMenu.addItem("🎬 コンテンツ戦略分析", "analyzeContentStrategy");
+    advancedMenu.addItem("🏆 競合・市場分析", "analyzeMarketPosition");
+    advancedMenu.addItem("👥 視聴者分析", "executeAudienceAnalysis");
+    advancedMenu.addItem("🔍 SEO・発見性分析", "analyzeSEOPerformance");
+    advancedMenu.addItem("📈 成長トレンド分析", "analyzeGrowthTrends");
+    menu.addSubMenu(advancedMenu);
+    
+    menu.addSeparator();
+    menu.addItem("🤖 AI戦略コンサルティング", "generateAIBusinessStrategy");
+    menu.addItem("🗺️ 成長ロードマップ作成", "createGrowthRoadmap");
+    
+    menu.addSeparator();
+    const benchmarkMenu = ui.createMenu("📈 ベンチマーク分析");
+    benchmarkMenu.addItem("🏆 業界ベンチマーク比較", "createIndustryBenchmark");
+    benchmarkMenu.addItem("⚖️ 複数チャンネル比較", "executeMultiChannelComparison");
+    benchmarkMenu.addItem("📊 競合ランキング", "createCompetitorRanking");
+    menu.addSubMenu(benchmarkMenu);
+    
+    menu.addSeparator();
+    menu.addItem("🏠 ダッシュボード初期化", "resetDashboard");
+    menu.addItem("🎨 ダッシュボード色更新", "refreshBusinessDashboardColors");
+    menu.addItem("📖 活用ガイド", "showBusinessGuide");
+    menu.addItem("🔧 システム診断", "runSystemDiagnostics");
+    menu.addItem("⚙️ シンプルモードに切り替え", "enableSimpleMode");
+  }
   
   menu.addToUi();
 }
@@ -1128,5 +1148,32 @@ function refreshBusinessDashboardColors() {
       "ダッシュボード色更新中にエラーが発生しました:\n\n" + error.toString(),
       ui.ButtonSet.OK
     );
+  }
+}
+
+/**
+ * 🎯 シンプルモード切り替え機能
+ */
+function enableSimpleMode() {
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.alert(
+    "シンプルモード",
+    "メニューをシンプルにして使いやすくしますか？\n\n" +
+    "✅ シンプルモード:\n" +
+    "・初期設定\n" +
+    "・チャンネル分析\n" +
+    "・詳細分析（サブメニュー）\n" +
+    "・使い方ガイド\n\n" +
+    "❌ 詳細モード:\n" +
+    "・全ての機能をメインメニューに表示",
+    ui.ButtonSet.YES_NO
+  );
+  
+  if (response === ui.Button.YES) {
+    PropertiesService.getDocumentProperties().setProperty("SIMPLE_MODE", "true");
+    ui.alert("設定完了", "シンプルモードが有効になりました。\nページを再読み込みしてください。", ui.ButtonSet.OK);
+  } else {
+    PropertiesService.getDocumentProperties().setProperty("SIMPLE_MODE", "false");
+    ui.alert("設定完了", "詳細モードが有効になりました。\nページを再読み込みしてください。", ui.ButtonSet.OK);
   }
 } 
