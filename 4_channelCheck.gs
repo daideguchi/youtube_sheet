@@ -76,7 +76,7 @@ function createUserInterface() {
  */
 function repairDashboardHeaders() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  const dashboardSheet = ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME);
 
   if (dashboardSheet) {
     setupDashboardHeaders(dashboardSheet);
@@ -99,7 +99,7 @@ function repairDashboardHeaders() {
  */
 function initializeDashboard() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  let dashboardSheet = ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME);
 
   if (!dashboardSheet) {
     // 新しいダッシュボードシートを作成
@@ -118,7 +118,7 @@ function initializeDashboard() {
  */
 function checkH7Status() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  const dashboardSheet = ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME);
 
   if (dashboardSheet) {
     const h7Value = dashboardSheet.getRange("H7").getValue();
@@ -167,13 +167,13 @@ function setupDashboardHeaders(dashboardSheet) {
   dashboardSheet.getRange("D2:F2").merge().setBackground("#F8F9FA");
 
   // プレースホルダーテキストを設定（既存の値がない場合のみ）
-  const currentValue = dashboardSheet.getRange("D2").getValue();
+  const currentValue = dashboardSheet.getRange("B8").getValue();
   if (!currentValue || currentValue.toString().startsWith("例:")) {
     dashboardSheet
-      .getRange("D2")
+      .getRange("B8")
       .setValue("例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ");
     dashboardSheet
-      .getRange("D2")
+      .getRange("B8")
       .setFontColor("#999999")
       .setFontStyle("italic");
   }
@@ -309,7 +309,7 @@ function setupDashboardHeaders(dashboardSheet) {
   protectH7Header(dashboardSheet);
 
   // 初期フォーカスの設定
-  dashboardSheet.getRange("D2").activate();
+  dashboardSheet.getRange("B8").activate();
 }
 
 /**
@@ -1231,7 +1231,7 @@ function handleOAuthCallback(request) {
 function updateAPIStatus() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const dashboardSheet =
-    ss.getSheetByName(DASHBOARD_SHEET_NAME) || ss.getActiveSheet();
+    ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME) || ss.getActiveSheet();
 
   // APIキーの状態
   const apiKey =
@@ -1482,11 +1482,11 @@ function runChannelAnalysis(silentMode = false) {
   const ui = SpreadsheetApp.getUi();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const dashboardSheet =
-    ss.getSheetByName(DASHBOARD_SHEET_NAME) || ss.getActiveSheet();
+    ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME) || ss.getActiveSheet();
 
   // チャンネル入力を取得（D2セルから）
   const channelInput = dashboardSheet
-    .getRange("D2") // 修正: C2 → D2
+    .getRange("B8") // 修正: C2 → D2
     .getValue()
     .toString()
     .trim();
@@ -1495,7 +1495,7 @@ function runChannelAnalysis(silentMode = false) {
   if (
     !channelInput ||
     channelInput === "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" ||
-    channelInput.startsWith("例:")
+    channelInput === "チャンネルURL or @ハンドル" || channelInput.startsWith("例:")
   ) {
     if (!silentMode) {
       ui.alert(
@@ -2156,7 +2156,7 @@ function protectH7Header(sheet) {
 function updateDashboardWithChannelInfo(channelInfo) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const dashboardSheet =
-    ss.getSheetByName(DASHBOARD_SHEET_NAME) || ss.getActiveSheet();
+    ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME) || ss.getActiveSheet();
 
   // 見出しを保護
   setupDashboardHeaders(dashboardSheet);
@@ -2769,7 +2769,7 @@ function analyzeVideoPerformance(silentMode = false) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   // ダッシュボードシートは情報取得のみに使用
-  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  const dashboardSheet = ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME);
   if (!dashboardSheet) {
     if (!silentMode) {
       ui.alert(
@@ -2838,7 +2838,7 @@ function analyzeVideoPerformance(silentMode = false) {
     videoSheet.getRange("A2").setValue("チャンネル名:");
     videoSheet.getRange("B2").setValue(channelName);
     videoSheet.getRange("C2").setValue("分析日:");
-    videoSheet.getRange("D2").setValue(new Date());
+    videoSheet.getRange("B8").setValue(new Date());
 
     // チャンネルの全動画を取得
     if (!silentMode) {
@@ -3262,7 +3262,7 @@ function analyzeAudience(silentMode = false) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   // ダッシュボードシートは情報取得のみに使用
-  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  const dashboardSheet = ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME);
   if (!dashboardSheet) {
     if (!silentMode) {
       ui.alert(
@@ -3348,7 +3348,7 @@ function analyzeAudience(silentMode = false) {
     audienceSheet.getRange("A2").setValue("チャンネル名:");
     audienceSheet.getRange("B2").setValue(channelName);
     audienceSheet.getRange("C2").setValue("分析日:");
-    audienceSheet.getRange("D2").setValue(new Date());
+    audienceSheet.getRange("B8").setValue(new Date());
 
     // 以下すべての処理でaudienceSheetを使用
     // （残りの処理は既存コードと同じだが、すべてaudienceSheetに対して実行）
@@ -4108,7 +4108,7 @@ function analyzeEngagement(silentMode = false) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   // ダッシュボードシートは情報取得のみに使用
-  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  const dashboardSheet = ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME);
   if (!dashboardSheet) {
     if (!silentMode) {
       ui.alert(
@@ -4190,7 +4190,7 @@ function analyzeEngagement(silentMode = false) {
     engagementSheet.getRange("A2").setValue("チャンネル名:");
     engagementSheet.getRange("B2").setValue(channelName);
     engagementSheet.getRange("C2").setValue("分析日:");
-    engagementSheet.getRange("D2").setValue(new Date());
+    engagementSheet.getRange("B8").setValue(new Date());
 
     // エンゲージメントデータを取得
     if (!silentMode) {
@@ -4924,7 +4924,7 @@ function analyzeTrafficSources(silentMode = false) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   // ダッシュボードシートは情報取得のみに使用
-  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  const dashboardSheet = ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME);
   if (!dashboardSheet) {
     if (!silentMode) {
       ui.alert(
@@ -5010,7 +5010,7 @@ function analyzeTrafficSources(silentMode = false) {
     trafficSheet.getRange("A2").setValue("チャンネル名:");
     trafficSheet.getRange("B2").setValue(channelName);
     trafficSheet.getRange("C2").setValue("分析日:");
-    trafficSheet.getRange("D2").setValue(new Date());
+    trafficSheet.getRange("B8").setValue(new Date());
 
     // トラフィックソースデータを取得
     if (!silentMode) {
@@ -5672,7 +5672,7 @@ function generateAIRecommendations(silentMode = false) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   // ダッシュボードシートは情報取得のみに使用
-  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  const dashboardSheet = ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME);
   if (!dashboardSheet) {
     if (!silentMode) {
       ui.alert(
@@ -5743,7 +5743,7 @@ function generateAIRecommendations(silentMode = false) {
     aiSheet.getRange("A2").setValue("チャンネル名:");
     aiSheet.getRange("B2").setValue(channelName);
     aiSheet.getRange("C2").setValue("分析日:");
-    aiSheet.getRange("D2").setValue(new Date());
+    aiSheet.getRange("B8").setValue(new Date());
 
     // データ収集
     if (!silentMode) {
@@ -7030,11 +7030,11 @@ function generateCompleteReport() {
   const ui = SpreadsheetApp.getUi();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const dashboardSheet =
-    ss.getSheetByName(DASHBOARD_SHEET_NAME) || ss.getActiveSheet();
+    ss.getSheetByName("📊 YouTube チャンネル分析") || ss.getSheetByName(DASHBOARD_SHEET_NAME) || ss.getActiveSheet();
 
   // チャンネル入力を確認（D2セルから）
   const channelInput = dashboardSheet
-    .getRange("D2") // 修正: C2 → D2
+    .getRange("B8") // 修正: C2 → D2
     .getValue()
     .toString()
     .trim();
@@ -7043,7 +7043,7 @@ function generateCompleteReport() {
   if (
     !channelInput ||
     channelInput === "例: @YouTube または UC-9-kyTW8ZkZNDHQJ6FgpwQ" ||
-    channelInput.startsWith("例:")
+    channelInput === "チャンネルURL or @ハンドル" || channelInput.startsWith("例:")
   ) {
     ui.alert(
       "入力エラー",
