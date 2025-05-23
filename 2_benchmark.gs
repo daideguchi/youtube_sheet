@@ -16,17 +16,22 @@ function onOpen() {
   // メインメニュー
   var menu = ui.createMenu("YouTube ツール");
 
-  // シンプル化したメニュー構成
+  // 統合ダッシュボードを最優先で表示
+  menu.addItem("🏠 統合ダッシュボード", "createOrShowMainDashboard");
+  menu.addSeparator();
   menu.addItem("① API設定・テスト", "setApiKey");
   menu.addItem("② チャンネル情報取得", "processHandles");
   menu.addItem("③ ベンチマークレポート作成", "createBenchmarkReport");
+  menu.addSeparator();
+  menu.addItem("📊 個別チャンネル分析", "analyzeExistingChannel");
+  menu.addItem("🔍 ベンチマーク分析", "showBenchmarkDashboard");
   menu.addSeparator();
   menu.addItem("シートテンプレート作成", "setupBasicSheet");
   menu.addItem("使い方ガイドを表示", "showHelpSheet");
   menu.addToUi();
 
-  // 初回実行時は基本的な説明を表示
-  showInitialGuide();
+  // 初回実行時または統合ダッシュボードがない場合は作成
+  createOrShowMainDashboard();
 }
 
 /**
@@ -63,6 +68,37 @@ function showInitialGuide() {
   } catch (error) {
     Logger.log("初期ガイド表示エラー: " + error.toString());
   }
+}
+
+/**
+ * ダッシュボードを作成または表示する（統合ダッシュボードへのリダイレクト）
+ */
+function createOrShowDashboard() {
+  // 新しい統合ダッシュボードにリダイレクト
+  createOrShowMainDashboard();
+}
+
+/**
+ * メインダッシュボードを表示（統合ダッシュボードへのリダイレクト）
+ */
+function showMainDashboard() {
+  createOrShowMainDashboard();
+}
+
+/**
+ * メインダッシュボードを作成
+ */
+function createMainDashboard() {
+  // 統合ダッシュボードにリダイレクト
+  createOrShowMainDashboard();
+}
+
+/**
+ * メインダッシュボードのフォーマット
+ */
+function formatMainDashboard(sheet) {
+  // この関数は統合ダッシュボードで置き換えられました
+  return;
 }
 
 /**
@@ -1287,4 +1323,724 @@ function calculateStats(data, colIndex) {
     max: max,
     median: median,
   };
+}
+
+/**
+ * 既存チャンネル分析を開始
+ */
+function analyzeExistingChannel() {
+  try {
+    var ui = SpreadsheetApp.getUi();
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // APIキーの確認
+    var apiKey = PropertiesService.getScriptProperties().getProperty("YOUTUBE_API_KEY");
+    if (!apiKey) {
+      var response = ui.alert(
+        "APIキーが設定されていません",
+        "YouTube Data APIキーを設定する必要があります。\n\n今すぐ設定しますか？",
+        ui.ButtonSet.YES_NO
+      );
+      
+      if (response == ui.Button.YES) {
+        setApiKey();
+      }
+      return;
+    }
+    
+    // チャンネル情報入力ダイアログ
+    var response = ui.prompt(
+      "既存チャンネル分析",
+      "分析したいチャンネルのハンドル名を入力してください（@から始まる）\n例: @YouTube",
+      ui.ButtonSet.OK_CANCEL
+    );
+    
+    if (response.getSelectedButton() == ui.Button.OK) {
+      var handle = response.getResponseText().trim();
+      
+      if (!handle.startsWith("@")) {
+        ui.alert("エラー", "ハンドル名は@から始まる必要があります。", ui.ButtonSet.OK);
+        return;
+      }
+      
+      // 分析シートを作成
+      createChannelAnalysisSheet(handle, apiKey);
+    }
+    
+  } catch (error) {
+    Logger.log("既存チャンネル分析エラー: " + error.toString());
+    SpreadsheetApp.getUi().alert(
+      "エラー",
+      "チャンネル分析中にエラーが発生しました: " + error.toString(),
+      ui.ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * チャンネル分析シートを作成
+ */
+function createChannelAnalysisSheet(handle, apiKey) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ui = SpreadsheetApp.getUi();
+    
+    // チャンネル情報を取得
+    var channelInfo = getChannelByHandle(handle, apiKey);
+    
+    if (!channelInfo) {
+      ui.alert("エラー", "チャンネルが見つかりませんでした: " + handle, ui.ButtonSet.OK);
+      return;
+    }
+    
+    // シート名を作成
+    var sheetName = "分析_" + channelInfo.snippet.title.substring(0, 20);
+    
+    // 既存のシートがあれば削除
+    var existingSheet = ss.getSheetByName(sheetName);
+    if (existingSheet) {
+      ss.deleteSheet(existingSheet);
+    }
+    
+    // 新しい分析シートを作成
+    var analysisSheet = ss.insertSheet(sheetName);
+    
+    // ヘッダー
+    analysisSheet.getRange("A1").setValue("チャンネル分析レポート");
+    analysisSheet.getRange("A2").setValue("分析日時: " + new Date().toLocaleString());
+    
+    // 基本情報セクション
+    analysisSheet.getRange("A4").setValue("📊 基本情報");
+    
+    var basicInfo = [
+      ["チャンネル名", channelInfo.snippet.title],
+      ["ハンドル名", handle],
+      ["チャンネルID", channelInfo.id],
+      ["作成日", new Date(channelInfo.snippet.publishedAt).toLocaleDateString()],
+      ["説明", channelInfo.snippet.description ? channelInfo.snippet.description.substring(0, 200) + "..." : ""]
+    ];
+    
+    for (var i = 0; i < basicInfo.length; i++) {
+      analysisSheet.getRange(6 + i, 1).setValue(basicInfo[i][0]);
+      analysisSheet.getRange(6 + i, 3).setValue(basicInfo[i][1]);
+    }
+    
+    // パフォーマンス指標セクション
+    analysisSheet.getRange("A12").setValue("📈 パフォーマンス指標");
+    
+    var stats = channelInfo.statistics || {};
+    var subscriberCount = stats.hiddenSubscriberCount ? "非公開" : 
+                         (stats.subscriberCount ? parseInt(stats.subscriberCount).toLocaleString() : "0");
+    var viewCount = parseInt(stats.viewCount || 0).toLocaleString();
+    var videoCount = parseInt(stats.videoCount || 0);
+    
+    // 指標と基準値の比較
+    var metrics = [
+      ["登録者数", subscriberCount, ""],
+      ["総視聴回数", viewCount, ""],
+      ["動画本数", videoCount.toLocaleString(), ""],
+      ["平均視聴回数/動画", videoCount > 0 ? Math.round(parseInt(stats.viewCount || 0) / videoCount).toLocaleString() : "0", ""]
+    ];
+    
+    // エンゲージメント率を計算（推定）
+    if (!stats.hiddenSubscriberCount && stats.subscriberCount && stats.viewCount) {
+      var engagementRate = calculateEngagementRate(parseInt(stats.subscriberCount), parseInt(stats.viewCount), videoCount);
+      metrics.push(["推定エンゲージメント率", engagementRate.rate + "%", engagementRate.status]);
+    }
+    
+    for (var i = 0; i < metrics.length; i++) {
+      analysisSheet.getRange(14 + i, 1).setValue(metrics[i][0]);
+      analysisSheet.getRange(14 + i, 3).setValue(metrics[i][1]);
+      analysisSheet.getRange(14 + i, 5).setValue(metrics[i][2]);
+    }
+    
+    // 業界標準との比較セクション
+    analysisSheet.getRange("G4").setValue("📊 業界標準との比較");
+    
+    var benchmarks = getIndustryBenchmarks();
+    var comparisonResults = compareWithBenchmarks(channelInfo, benchmarks);
+    
+    var row = 6;
+    for (var metric in comparisonResults) {
+      analysisSheet.getRange(row, 7).setValue(metric);
+      analysisSheet.getRange(row, 9).setValue(comparisonResults[metric].value);
+      analysisSheet.getRange(row, 10).setValue(comparisonResults[metric].benchmark);
+      analysisSheet.getRange(row, 11).setValue(comparisonResults[metric].status);
+      
+      // ステータスに応じて色を設定
+      var statusCell = analysisSheet.getRange(row, 11);
+      if (comparisonResults[metric].status === "✅ 良好") {
+        statusCell.setFontColor("#0F9D58");
+      } else if (comparisonResults[metric].status === "⚠️ 改善余地あり") {
+        statusCell.setFontColor("#F4B400");
+      } else if (comparisonResults[metric].status === "❌ 要改善") {
+        statusCell.setFontColor("#DB4437");
+      }
+      
+      row++;
+    }
+    
+    // サムネイル画像
+    if (channelInfo.snippet.thumbnails && channelInfo.snippet.thumbnails.high) {
+      var imageFormula = '=IMAGE("' + channelInfo.snippet.thumbnails.high.url + '", 1)';
+      analysisSheet.getRange("G1").setValue(imageFormula);
+      analysisSheet.setRowHeight(1, 80);
+    }
+    
+    // フォーマット
+    formatChannelAnalysisSheet(analysisSheet);
+    
+    // ダッシュボードの統計を更新
+    updateDashboardStats();
+    
+    // シートをアクティブに
+    ss.setActiveSheet(analysisSheet);
+    
+    ui.alert(
+      "分析完了",
+      "チャンネル「" + channelInfo.snippet.title + "」の分析が完了しました。",
+      ui.ButtonSet.OK
+    );
+    
+  } catch (error) {
+    Logger.log("チャンネル分析シート作成エラー: " + error.toString());
+    throw error;
+  }
+}
+
+/**
+ * エンゲージメント率を計算
+ */
+function calculateEngagementRate(subscribers, totalViews, videoCount) {
+  if (videoCount === 0 || subscribers === 0) {
+    return { rate: "0", status: "データ不足" };
+  }
+  
+  // 平均視聴回数/動画を計算
+  var avgViewsPerVideo = totalViews / videoCount;
+  
+  // エンゲージメント率の推定（平均視聴回数 / 登録者数）
+  var rate = (avgViewsPerVideo / subscribers) * 100;
+  
+  var status = "";
+  if (rate >= 10) {
+    status = "✅ 優秀";
+  } else if (rate >= 5) {
+    status = "✅ 良好";
+  } else if (rate >= 1) {
+    status = "⚠️ 平均的";
+  } else {
+    status = "❌ 要改善";
+  }
+  
+  return {
+    rate: rate.toFixed(2),
+    status: status
+  };
+}
+
+/**
+ * 業界標準ベンチマークを取得
+ */
+function getIndustryBenchmarks() {
+  return {
+    // YouTube業界標準（2024年データ基準）
+    subscriberGrowthRate: { value: 5, unit: "%/年", description: "年間成長率" },
+    viewToSubscriberRatio: { value: 10, unit: "倍", description: "視聴回数/登録者数（1動画あたり）" },
+    videosPerMonth: { value: 4, unit: "本", description: "月間投稿数" },
+    engagementRate: { value: 2, unit: "%", description: "エンゲージメント率（小規模チャンネル基準）" },
+    // 登録者数規模別エンゲージメント率基準
+    nanoEngagementRate: { value: 5, unit: "%", description: "ナノインフルエンサー（1-10k）" },
+    microEngagementRate: { value: 3, unit: "%", description: "マイクロインフルエンサー（10-100k）" },
+    macroEngagementRate: { value: 1, unit: "%", description: "マクロインフルエンサー（100k+）" },
+    // 投稿頻度の標準
+    minPostFrequency: { value: 1, unit: "本/月", description: "最低投稿頻度" },
+    optimalPostFrequency: { value: 4, unit: "本/月", description: "最適投稿頻度" }
+  };
+}
+
+/**
+ * チャンネルを業界標準と比較
+ */
+function compareWithBenchmarks(channelInfo, benchmarks) {
+  var results = {};
+  var stats = channelInfo.statistics || {};
+  
+  // 登録者数に基づいてエンゲージメント率の基準を決定
+  var subscriberCount = parseInt(stats.subscriberCount || 0);
+  var engagementBenchmark;
+  
+  if (subscriberCount <= 10000) {
+    engagementBenchmark = benchmarks.nanoEngagementRate.value;
+  } else if (subscriberCount <= 100000) {
+    engagementBenchmark = benchmarks.microEngagementRate.value;
+  } else {
+    engagementBenchmark = benchmarks.macroEngagementRate.value;
+  }
+  
+  // 視聴回数/登録者数比率（1動画あたり）
+  if (!stats.hiddenSubscriberCount && stats.subscriberCount && stats.viewCount && stats.videoCount) {
+    var avgViewsPerVideo = parseInt(stats.viewCount) / parseInt(stats.videoCount);
+    var ratio = avgViewsPerVideo / parseInt(stats.subscriberCount);
+    var benchmark = benchmarks.viewToSubscriberRatio.value;
+    
+    results["視聴回数/登録者数（1動画あたり）"] = {
+      value: (ratio * 100).toFixed(1) + "%",
+      benchmark: (benchmark * 100) + "%",
+      status: ratio >= benchmark ? "✅ 良好" : ratio >= benchmark * 0.5 ? "⚠️ 改善余地あり" : "❌ 要改善"
+    };
+  }
+  
+  // 動画投稿頻度（作成日からの月数で計算）
+  if (stats.videoCount && channelInfo.snippet.publishedAt) {
+    var createdDate = new Date(channelInfo.snippet.publishedAt);
+    var monthsSinceCreation = (new Date() - createdDate) / (1000 * 60 * 60 * 24 * 30.44); // より正確な月数計算
+    var videosPerMonth = parseInt(stats.videoCount) / monthsSinceCreation;
+    var minBenchmark = benchmarks.minPostFrequency.value;
+    var optimalBenchmark = benchmarks.optimalPostFrequency.value;
+    
+    var status;
+    if (videosPerMonth >= optimalBenchmark) {
+      status = "✅ 最適";
+    } else if (videosPerMonth >= minBenchmark) {
+      status = "⚠️ 良好";
+    } else {
+      status = "❌ 要改善";
+    }
+    
+    results["月間投稿数（推定）"] = {
+      value: videosPerMonth.toFixed(1) + "本",
+      benchmark: optimalBenchmark + "本（最適）",
+      status: status
+    };
+  }
+  
+  // エンゲージメント率の推定比較
+  if (!stats.hiddenSubscriberCount && stats.subscriberCount && stats.viewCount && stats.videoCount) {
+    var avgViewsPerVideo = parseInt(stats.viewCount) / parseInt(stats.videoCount);
+    var estimatedEngagement = (avgViewsPerVideo / parseInt(stats.subscriberCount)) * 100;
+    
+    var engagementStatus;
+    if (estimatedEngagement >= engagementBenchmark) {
+      engagementStatus = "✅ 良好";
+    } else if (estimatedEngagement >= engagementBenchmark * 0.5) {
+      engagementStatus = "⚠️ 改善余地あり";
+    } else {
+      engagementStatus = "❌ 要改善";
+    }
+    
+    results["推定エンゲージメント率"] = {
+      value: estimatedEngagement.toFixed(2) + "%",
+      benchmark: engagementBenchmark + "%",
+      status: engagementStatus
+    };
+  }
+  
+  return results;
+}
+
+/**
+ * チャンネル分析シートのフォーマット
+ */
+function formatChannelAnalysisSheet(sheet) {
+  // ヘッダー
+  sheet.getRange("A1:F1").merge();
+  sheet.getRange("A1").setFontSize(18).setFontWeight("bold")
+    .setBackground("#1a73e8").setFontColor("white");
+  
+  sheet.getRange("A2:F2").merge();
+  sheet.getRange("A2").setFontStyle("italic");
+  
+  // 基本情報セクション
+  sheet.getRange("A4:F4").merge();
+  sheet.getRange("A4").setFontSize(14).setFontWeight("bold")
+    .setBackground("#f8f9fa");
+  
+  // パフォーマンス指標セクション
+  sheet.getRange("A12:F12").merge();
+  sheet.getRange("A12").setFontSize(14).setFontWeight("bold")
+    .setBackground("#f8f9fa");
+  
+  // 業界標準との比較セクション
+  sheet.getRange("G4:K4").merge();
+  sheet.getRange("G4").setFontSize(14).setFontWeight("bold")
+    .setBackground("#f8f9fa");
+  
+  // 列幅の調整
+  sheet.setColumnWidth(1, 150);
+  sheet.setColumnWidth(2, 20);
+  sheet.setColumnWidth(3, 200);
+  sheet.setColumnWidth(4, 20);
+  sheet.setColumnWidth(5, 120);
+  sheet.setColumnWidth(6, 20);
+  sheet.setColumnWidth(7, 150);
+  sheet.setColumnWidth(8, 20);
+  sheet.setColumnWidth(9, 100);
+  sheet.setColumnWidth(10, 100);
+  sheet.setColumnWidth(11, 120);
+  
+  // 枠線
+  sheet.getRange("A6:E11").setBorder(true, true, true, true, true, true);
+  sheet.getRange("A14:E19").setBorder(true, true, true, true, true, true);
+  sheet.getRange("G6:K12").setBorder(true, true, true, true, true, true);
+}
+
+/**
+ * ダッシュボードの統計を更新
+ */
+function updateDashboardStats() {
+  // 新しい統合ダッシュボードの統計更新にリダイレクト
+  updateDashboardStatistics();
+}
+
+/**
+ * ステータスに応じて色を設定するヘルパー関数
+ */
+function setStatusColors(sheet, cellAddress, status) {
+  var cell = sheet.getRange(cellAddress);
+  
+  if (status.includes("✅")) {
+    cell.setFontColor("#0F9D58"); // 緑
+  } else if (status.includes("⚠️")) {
+    cell.setFontColor("#F4B400"); // 黄
+  } else if (status.includes("❌")) {
+    cell.setFontColor("#DB4437"); // 赤
+  }
+}
+
+/**
+ * ベンチマーク分析ダッシュボードを表示
+ */
+function showBenchmarkDashboard() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ui = SpreadsheetApp.getUi();
+    
+    // ベンチマークダッシュボードを作成
+    var dashboardName = "🔍 ベンチマーク分析";
+    var existingDashboard = ss.getSheetByName(dashboardName);
+    
+    if (existingDashboard) {
+      ss.deleteSheet(existingDashboard);
+    }
+    
+    var benchmarkDashboard = ss.insertSheet(dashboardName);
+    
+    // ヘッダー
+    benchmarkDashboard.getRange("A1").setValue("ベンチマーク分析ダッシュボード");
+    benchmarkDashboard.getRange("A2").setValue("競合チャンネルとの比較分析");
+    
+    // メニューオプション
+    benchmarkDashboard.getRange("A4").setValue("📋 分析オプション");
+    
+    var options = [
+      ["📊", "新規ベンチマーク分析", "複数のチャンネルを一括で分析", "startNewBenchmark"],
+      ["📈", "既存データから分析", "保存済みのデータからレポート作成", "analyzeExistingData"],
+      ["🔄", "データ更新", "既存チャンネルの最新情報を取得", "updateBenchmarkData"]
+    ];
+    
+    var startRow = 6;
+    for (var i = 0; i < options.length; i++) {
+      var row = startRow + (i * 3);
+      benchmarkDashboard.getRange(row, 1).setValue(options[i][0]);
+      benchmarkDashboard.getRange(row, 2).setValue(options[i][1]);
+      benchmarkDashboard.getRange(row + 1, 2).setValue(options[i][2]);
+      benchmarkDashboard.getRange(row, 4).setValue("▶ 実行");
+      benchmarkDashboard.getRange(row, 4).setBackground("#4285F4").setFontColor("white");
+    }
+    
+    // 既存のベンチマークデータサマリー
+    benchmarkDashboard.getRange("G4").setValue("📊 既存データサマリー");
+    
+    // データシートを確認
+    var dataSheet = ss.getSheetByName("Sheet1") || ss.getSheetByName("シート1");
+    if (dataSheet) {
+      var channelCount = countValidChannels(dataSheet);
+      benchmarkDashboard.getRange("G6").setValue("登録済みチャンネル数:");
+      benchmarkDashboard.getRange("I6").setValue(channelCount + " 件");
+    }
+    
+    // フォーマット
+    formatBenchmarkDashboard(benchmarkDashboard);
+    
+    // アクティブに
+    ss.setActiveSheet(benchmarkDashboard);
+    
+  } catch (error) {
+    Logger.log("ベンチマークダッシュボード作成エラー: " + error.toString());
+    SpreadsheetApp.getUi().alert(
+      "エラー",
+      "ベンチマークダッシュボードの作成中にエラーが発生しました: " + error.toString(),
+      ui.ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * 有効なチャンネル数をカウント
+ */
+function countValidChannels(sheet) {
+  var data = sheet.getDataRange().getValues();
+  var count = 0;
+  
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][2] && data[i][2] !== "チャンネルが見つかりません") {
+      count++;
+    }
+  }
+  
+  return count;
+}
+
+/**
+ * ベンチマークダッシュボードのフォーマット
+ */
+function formatBenchmarkDashboard(sheet) {
+  // ヘッダー
+  sheet.getRange("A1:J1").merge();
+  sheet.getRange("A1").setFontSize(18).setFontWeight("bold")
+    .setHorizontalAlignment("center")
+    .setBackground("#1a73e8").setFontColor("white");
+  
+  sheet.getRange("A2:J2").merge();
+  sheet.getRange("A2").setFontSize(12).setFontStyle("italic")
+    .setHorizontalAlignment("center");
+  
+  // オプションヘッダー
+  sheet.getRange("A4:E4").merge();
+  sheet.getRange("A4").setFontSize(14).setFontWeight("bold")
+    .setBackground("#f8f9fa");
+  
+  // サマリーヘッダー
+  sheet.getRange("G4:J4").merge();
+  sheet.getRange("G4").setFontSize(14).setFontWeight("bold")
+    .setBackground("#f8f9fa");
+  
+  // オプション項目のフォーマット
+  var optionRows = [6, 9, 12];
+  for (var i = 0; i < optionRows.length; i++) {
+    var row = optionRows[i];
+    sheet.getRange(row, 1).setFontSize(20)
+      .setHorizontalAlignment("center");
+    sheet.setRowHeight(row, 35);
+    sheet.getRange(row, 2, 1, 2).merge();
+    sheet.getRange(row, 2).setFontSize(13).setFontWeight("bold");
+    sheet.getRange(row + 1, 2, 1, 2).merge();
+    sheet.getRange(row + 1, 2).setFontSize(11).setFontColor("#5f6368");
+    sheet.getRange(row, 4).setHorizontalAlignment("center")
+      .setVerticalAlignment("middle")
+      .setFontWeight("bold");
+  }
+  
+  // 列幅
+  sheet.setColumnWidth(1, 50);
+  sheet.setColumnWidth(2, 180);
+  sheet.setColumnWidth(3, 180);
+  sheet.setColumnWidth(4, 80);
+  sheet.setColumnWidth(7, 160);
+  sheet.setColumnWidth(9, 100);
+  
+  // 枠線
+  sheet.getRange("A4:E14").setBorder(true, true, true, true, true, true);
+  sheet.getRange("G4:J8").setBorder(true, true, true, true, true, true);
+}
+
+/**
+ * 新規ベンチマーク分析を開始
+ */
+function startNewBenchmark() {
+  try {
+    var ui = SpreadsheetApp.getUi();
+    
+    ui.alert(
+      "新規ベンチマーク分析",
+      "新規ベンチマーク分析を開始します。\n\n" +
+      "1. データシートにハンドル名を入力\n" +
+      "2. メニューから「② チャンネル情報取得」を実行\n" +
+      "3. メニューから「③ ベンチマークレポート作成」を実行",
+      ui.ButtonSet.OK
+    );
+    
+    // データシートを表示
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var dataSheet = ss.getSheetByName("Sheet1") || ss.getSheetByName("シート1");
+    
+    if (!dataSheet) {
+      // 新しいデータシートを作成
+      setupBasicSheet();
+    } else {
+      ss.setActiveSheet(dataSheet);
+    }
+    
+  } catch (error) {
+    Logger.log("新規ベンチマーク分析エラー: " + error.toString());
+  }
+}
+
+/**
+ * ロードマップ策定機能（プレースホルダー）
+ */
+function createRoadmap() {
+  SpreadsheetApp.getUi().alert(
+    "ロードマップ策定",
+    "この機能は現在開発中です。\n\n今後のアップデートで以下の機能が追加されます：\n" +
+    "・成長目標の設定\n" +
+    "・マイルストーンの作成\n" +
+    "・アクションプランの策定",
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
+/**
+ * 市場リサーチ機能（プレースホルダー）
+ */
+function conductMarketResearch() {
+  SpreadsheetApp.getUi().alert(
+    "市場リサーチ",
+    "この機能は現在開発中です。\n\n今後のアップデートで以下の機能が追加されます：\n" +
+    "・トレンド分析\n" +
+    "・ニッチ市場の発見\n" +
+    "・キーワード分析",
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
+/**
+ * ダッシュボードのボタンクリック処理を設定
+ */
+function onDashboardOpen(e) {
+  var sheet = e.source.getActiveSheet();
+  var range = e.range;
+  
+  // ダッシュボードシートでのクリックのみ処理
+  if (sheet.getName() === "📊 ダッシュボード" || sheet.getName() === "🔍 ベンチマーク分析") {
+    // ボタン列（D列）のクリックを検出
+    if (range.getColumn() === 4) {
+      var row = range.getRow();
+      var buttonValue = range.getValue();
+      
+      if (buttonValue === "▶ 開始" || buttonValue === "▶ 実行") {
+        // 対応する関数名を取得（E列）
+        var functionName = sheet.getRange(row, 5).getValue();
+        
+        // 関数を実行
+        if (functionName && this[functionName]) {
+          this[functionName]();
+        }
+      }
+    }
+  }
+}
+
+/**
+ * 既存データから分析を実行
+ */
+function analyzeExistingData() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ui = SpreadsheetApp.getUi();
+    
+    // データシートを確認
+    var dataSheet = ss.getSheetByName("Sheet1") || ss.getSheetByName("シート1");
+    
+    if (!dataSheet) {
+      ui.alert(
+        "データシートが見つかりません",
+        "先にデータシートを作成し、チャンネル情報を取得してください。",
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    // 有効なチャンネル数を確認
+    var channelCount = countValidChannels(dataSheet);
+    
+    if (channelCount === 0) {
+      ui.alert(
+        "分析可能なデータがありません",
+        "先にチャンネル情報を取得してください。\n\n" +
+        "1. データシートにハンドル名を入力\n" +
+        "2. メニューから「② チャンネル情報取得」を実行",
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    // 分析オプションを選択
+    var response = ui.alert(
+      "既存データ分析",
+      "分析可能なチャンネル: " + channelCount + " 件\n\n" +
+      "ベンチマークレポートを作成しますか？",
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (response == ui.Button.YES) {
+      createBenchmarkReport();
+    }
+    
+  } catch (error) {
+    Logger.log("既存データ分析エラー: " + error.toString());
+    SpreadsheetApp.getUi().alert(
+      "エラー",
+      "既存データ分析中にエラーが発生しました: " + error.toString(),
+      ui.ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * ベンチマークデータを更新
+ */
+function updateBenchmarkData() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ui = SpreadsheetApp.getUi();
+    
+    // データシートを確認
+    var dataSheet = ss.getSheetByName("Sheet1") || ss.getSheetByName("シート1");
+    
+    if (!dataSheet) {
+      ui.alert(
+        "データシートが見つかりません",
+        "先にデータシートを作成してください。",
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    // 有効なチャンネル数を確認
+    var channelCount = countValidChannels(dataSheet);
+    
+    if (channelCount === 0) {
+      ui.alert(
+        "更新可能なデータがありません",
+        "先にチャンネル情報を取得してください。",
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    // 確認ダイアログ
+    var response = ui.alert(
+      "データ更新確認",
+      "既存のチャンネルデータを最新情報に更新します。\n\n" +
+      "対象チャンネル: " + channelCount + " 件\n" +
+      "※API使用量が消費されます\n\n" +
+      "続行しますか？",
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (response == ui.Button.YES) {
+      // 既存のprocessHandles関数を実行
+      processHandles();
+    }
+    
+  } catch (error) {
+    Logger.log("ベンチマークデータ更新エラー: " + error.toString());
+    SpreadsheetApp.getUi().alert(
+      "エラー",
+      "データ更新中にエラーが発生しました: " + error.toString(),
+      ui.ButtonSet.OK
+    );
+  }
 }
