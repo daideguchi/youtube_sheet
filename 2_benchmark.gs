@@ -346,44 +346,23 @@ function setEditTrigger() {
 }
 
 /**
- * 編集時のイベントハンドラ - プレースホルダーから通常テキストへの変換を処理
+ * 編集時のイベントハンドラ - 統合ダッシュボード対応版
  */
 function onEdit(e) {
   try {
     var sheet = e.source.getActiveSheet();
     var range = e.range;
     var sheetName = sheet.getName();
+    var value = range.getValue();
     
-    // ========== チャンネル分析ダッシュボードでのクリック処理 ==========
-    if (sheetName === "📊 チャンネル分析") {
+    // ========== 統合ダッシュボードでのコマンド処理 ==========
+    if (sheetName === "📊 YouTube チャンネル分析") {
       
-      // 基本分析ボタン（I4）のクリック
-      if (range.getRow() === 4 && range.getColumn() === 9) {
-        runBasicAnalysis();
-        return;
-      }
-      
-      // API設定ボタン（B6）のクリック
-      if (range.getRow() === 6 && range.getColumn() === 2) {
-        setApiKey();
-        return;
-      }
-      
-      // クイックアクションボタン（25行目の偶数列）のクリック
-      if (range.getRow() === 25) {
-        var col = range.getColumn();
-        if ([2, 4, 6, 8].indexOf(col) !== -1) {
-          var functionName = sheet.getRange(26, col).getValue();
-          
-          if (functionName) {
-            try {
-              if (typeof eval(functionName) === 'function') {
-                eval(functionName + '()');
-              }
-            } catch (error) {
-              Logger.log("クイックアクション実行エラー: " + functionName + " - " + error.toString());
-            }
-          }
+      // B9セル（操作セル）でのコマンド入力
+      if (range.getRow() === 9 && range.getColumn() === 2) {
+        if (value && value.toString().trim() !== "" && value.toString().trim() !== "ここに「分析」と入力してEnter") {
+          // コマンドを実行
+          handleQuickAction(value);
         }
         return;
       }
@@ -424,6 +403,23 @@ function onEdit(e) {
             }
           }
         }
+      }
+    }
+    
+    // ========== 従来のプレースホルダー処理 ==========
+    // B列でのプレースホルダー処理（従来の機能）
+    if (range.getColumn() === 2 && range.getRow() >= 2) {
+      var value = range.getValue();
+      
+      if (value && value.toString().trim() !== "") {
+        // プレースホルダーの場合はクリア
+        if (value.toString().includes("@と入力して") || value.toString().includes("例）")) {
+          range.setValue("");
+          return;
+        }
+        
+        // 通常のテキストの場合はフォーマットをリセット
+        range.setFontColor("#000000").setFontStyle("normal");
       }
     }
     

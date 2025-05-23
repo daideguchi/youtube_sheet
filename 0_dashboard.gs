@@ -1,30 +1,590 @@
 /* eslint-disable */
 /**
- * YouTubeチャンネル分析ダッシュボード
- * 一つのチャンネルに特化したシンプル分析ツール
+ * YouTube チャンネル分析ダッシュボード（統合版）
+ * 確実に動作するメニューベース・セル変更ベースの操作
  *
  * 作成者: Claude AI
- * バージョン: 3.1 (修正版)
+ * バージョン: 4.0 (統合・実用版)
  * 最終更新: 2025-01-22
  */
 /* eslint-enable */
 
 /**
- * チャンネル分析ダッシュボードのメイン起動
+ * 統合ダッシュボードのメイン起動
  */
 function createOrShowMainDashboard() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var dashboardSheet = ss.getSheetByName("📊 チャンネル分析");
+    var dashboardSheet = ss.getSheetByName("📊 YouTube チャンネル分析");
     
     if (!dashboardSheet) {
-      createChannelAnalysisDashboard();
+      createUnifiedDashboard();
     } else {
       ss.setActiveSheet(dashboardSheet);
-      refreshDashboard();
+      updateDashboardDisplay();
     }
   } catch (error) {
     Logger.log("ダッシュボード起動エラー: " + error.toString());
+  }
+}
+
+/**
+ * 統合ダッシュボードを作成
+ */
+function createUnifiedDashboard() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ui = SpreadsheetApp.getUi();
+    
+    // 既存の混乱するダッシュボードを削除
+    var oldSheets = ["📊 チャンネル分析", "📊 統合ダッシュボード", "🎬 YouTube事業管理"];
+    for (var i = 0; i < oldSheets.length; i++) {
+      var oldSheet = ss.getSheetByName(oldSheets[i]);
+      if (oldSheet) {
+        ss.deleteSheet(oldSheet);
+      }
+    }
+    
+    // 新しい統合ダッシュボードシートを作成
+    var dashboard = ss.insertSheet("📊 YouTube チャンネル分析", 0);
+    
+    // ========== ヘッダー ==========
+    dashboard.getRange("A1:J1").merge();
+    dashboard.getRange("A1").setValue("📊 YouTube チャンネル分析ダッシュボード（統合版）");
+    
+    dashboard.getRange("A2:J2").merge();
+    dashboard.getRange("A2").setValue("メニューベース操作 - 確実に動作します");
+    
+    // ========== 操作方法説明 ==========
+    dashboard.getRange("A4").setValue("🚀 操作方法:");
+    dashboard.getRange("A5").setValue("1. メニューから「YouTube ツール」を選択");
+    dashboard.getRange("A6").setValue("2. または下記のセルに入力して操作");
+    
+    // ========== チャンネル入力エリア ==========
+    dashboard.getRange("A8").setValue("🔗 チャンネル入力:");
+    dashboard.getRange("B8").setValue("チャンネルURL or @ハンドル");
+    dashboard.getRange("B8").setBackground("#f0f8ff");
+    
+    dashboard.getRange("A9").setValue("📝 操作セル:");
+    dashboard.getRange("B9").setValue("ここに「分析」と入力してEnter");
+    dashboard.getRange("B9").setBackground("#fff0f0");
+    
+    // ========== API設定状況 ==========
+    dashboard.getRange("A11").setValue("🔑 API設定状況:");
+    dashboard.getRange("B11").setValue("確認中...");
+    
+    // ========== 分析結果エリア ==========
+    dashboard.getRange("A13").setValue("📈 最新分析結果");
+    
+    var resultLabels = [
+      "チャンネル名:", "登録者数:", "総視聴回数:", "動画数:", 
+      "チャンネル開設日:", "平均視聴回数:", "エンゲージメント率:", "総合評価:"
+    ];
+    
+    for (var i = 0; i < resultLabels.length; i++) {
+      dashboard.getRange(15 + i, 1).setValue(resultLabels[i]);
+      dashboard.getRange(15 + i, 2).setValue("未分析");
+    }
+    
+    // ========== 利用可能な機能一覧 ==========
+    dashboard.getRange("D13").setValue("⚡ 利用可能な機能");
+    
+    var features = [
+      "① API設定・テスト",
+      "② チャンネル情報取得", 
+      "③ ベンチマークレポート作成",
+      "④ 個別チャンネル分析",
+      "⑤ ベンチマーク分析",
+      "⑥ 使い方ガイド"
+    ];
+    
+    for (var i = 0; i < features.length; i++) {
+      dashboard.getRange(15 + i, 4).setValue(features[i]);
+      dashboard.getRange(15 + i, 5).setValue("メニューから実行");
+    }
+    
+    // ========== 改善提案エリア ==========
+    dashboard.getRange("A24").setValue("💡 改善提案・次のアクション");
+    dashboard.getRange("A25:J27").merge();
+    dashboard.getRange("A25").setValue("まだ分析が実行されていません。\n\n📌 はじめ方:\n1. メニュー「YouTube ツール > ① API設定・テスト」\n2. B8セルにチャンネルURL入力\n3. B9セルに「分析」と入力してEnter");
+    
+    // ========== クイックアクション（セル変更ベース） ==========
+    dashboard.getRange("A29").setValue("⚡ クイックアクション");
+    dashboard.getRange("A30").setValue("操作");
+    dashboard.getRange("B30").setValue("実行内容");
+    dashboard.getRange("C30").setValue("入力値");
+    
+    var quickActions = [
+      ["分析", "チャンネル分析を実行", "B9セルに「分析」"],
+      ["API", "API設定を実行", "B9セルに「API」"],
+      ["レポート", "ベンチマークレポート作成", "B9セルに「レポート」"],
+      ["更新", "ダッシュボード更新", "B9セルに「更新」"]
+    ];
+    
+    for (var i = 0; i < quickActions.length; i++) {
+      dashboard.getRange(31 + i, 1).setValue(quickActions[i][0]);
+      dashboard.getRange(31 + i, 2).setValue(quickActions[i][1]);
+      dashboard.getRange(31 + i, 3).setValue(quickActions[i][2]);
+    }
+    
+    // フォーマットを適用
+    formatUnifiedDashboard(dashboard);
+    
+    // 初期データを読み込み
+    updateDashboardDisplay();
+    
+    // アクティブにする
+    ss.setActiveSheet(dashboard);
+    
+    // 使い方ガイド
+    ui.alert(
+      "📊 統合ダッシュボード完成！",
+      "確実に動作する統合ダッシュボードが作成されました。\n\n" +
+      "🚀 操作方法:\n" +
+      "1. メニュー「YouTube ツール」から各機能を実行\n" +
+      "2. B8セルにチャンネルURL入力\n" +
+      "3. B9セルに「分析」と入力してEnterで即座に分析実行\n\n" +
+      "これで確実に動作します！",
+      ui.ButtonSet.OK
+    );
+    
+  } catch (error) {
+    Logger.log("統合ダッシュボード作成エラー: " + error.toString());
+    SpreadsheetApp.getUi().alert(
+      "エラー",
+      "ダッシュボード作成中にエラーが発生しました: " + error.toString(),
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * 統合ダッシュボードのフォーマット設定
+ */
+function formatUnifiedDashboard(sheet) {
+  // ========== ヘッダー ==========
+  sheet.getRange("A1").setFontSize(20).setFontWeight("bold")
+    .setBackground("#1a73e8").setFontColor("white")
+    .setHorizontalAlignment("center");
+  
+  sheet.getRange("A2").setFontSize(12)
+    .setBackground("#e8f0fe").setFontColor("#1a73e8")
+    .setHorizontalAlignment("center");
+  
+  // ========== 操作方法説明 ==========
+  sheet.getRange("A4").setFontSize(14).setFontWeight("bold")
+    .setBackground("#f8f9fa");
+  sheet.getRange("A5:A6").setFontSize(11).setFontColor("#5f6368");
+  
+  // ========== 入力エリア ==========
+  sheet.getRange("A8").setFontWeight("bold").setFontSize(12);
+  sheet.getRange("B8").setBorder(true, true, true, true, false, false, "#4285F4", SpreadsheetApp.BorderStyle.SOLID);
+  
+  sheet.getRange("A9").setFontWeight("bold").setFontSize(12);
+  sheet.getRange("B9").setBorder(true, true, true, true, false, false, "#DB4437", SpreadsheetApp.BorderStyle.SOLID);
+  
+  // ========== API設定 ==========
+  sheet.getRange("A11").setFontWeight("bold");
+  
+  // ========== 分析結果エリア ==========
+  sheet.getRange("A13").setFontSize(14).setFontWeight("bold")
+    .setBackground("#f8f9fa");
+  sheet.getRange("D13").setFontSize(14).setFontWeight("bold")
+    .setBackground("#f8f9fa");
+  
+  // 分析結果の枠線
+  sheet.getRange("A15:B22").setBorder(true, true, true, true, true, true, "#dddddd", SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange("A15:A22").setBackground("#e3f2fd").setFontWeight("bold");
+  
+  // 機能一覧の枠線
+  sheet.getRange("D15:E20").setBorder(true, true, true, true, true, true, "#dddddd", SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange("D15:D20").setBackground("#fff8e1").setFontWeight("bold");
+  
+  // ========== 改善提案エリア ==========
+  sheet.getRange("A24").setFontSize(14).setFontWeight("bold")
+    .setBackground("#f8f9fa");
+  sheet.getRange("A25").setBorder(true, true, true, true, false, false, "#dddddd", SpreadsheetApp.BorderStyle.SOLID)
+    .setBackground("#fff3e0").setVerticalAlignment("top");
+  
+  // ========== クイックアクション ==========
+  sheet.getRange("A29").setFontSize(14).setFontWeight("bold")
+    .setBackground("#f8f9fa");
+  
+  sheet.getRange("A30:C30").setFontWeight("bold").setBackground("#e0e0e0");
+  sheet.getRange("A31:C34").setBorder(true, true, true, true, true, true, "#dddddd", SpreadsheetApp.BorderStyle.SOLID);
+  
+  // ========== 列幅設定 ==========
+  sheet.setColumnWidth(1, 150);  // ラベル
+  sheet.setColumnWidth(2, 200);  // 値・入力
+  sheet.setColumnWidth(3, 120);  // スペーサー
+  sheet.setColumnWidth(4, 150);  // 機能名
+  sheet.setColumnWidth(5, 150);  // 説明
+  sheet.setColumnWidth(6, 50);   // 余白
+  
+  // ========== 行高設定 ==========
+  sheet.setRowHeight(1, 40);
+  sheet.setRowHeight(2, 25);
+  sheet.setRowHeight(8, 30);
+  sheet.setRowHeight(9, 30);
+  sheet.setRowHeight(25, 80);
+}
+
+/**
+ * ダッシュボード表示を更新
+ */
+function updateDashboardDisplay() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var dashboard = ss.getSheetByName("📊 YouTube チャンネル分析");
+    
+    if (!dashboard) return;
+    
+    // API設定状況確認
+    var apiKey = PropertiesService.getScriptProperties().getProperty("YOUTUBE_API_KEY");
+    var apiStatus = apiKey ? "✅ 設定済み" : "❌ 未設定（メニューから設定）";
+    dashboard.getRange("B11").setValue(apiStatus);
+    dashboard.getRange("B11").setFontColor(apiKey ? "#0F9D58" : "#DB4437");
+    
+    // 最新の分析データがあるかチェック
+    var sheets = ss.getSheets();
+    var latestAnalysis = null;
+    
+    for (var i = 0; i < sheets.length; i++) {
+      var sheetName = sheets[i].getName();
+      if (sheetName.startsWith("分析_")) {
+        latestAnalysis = sheets[i];
+        break;
+      }
+    }
+    
+    if (latestAnalysis) {
+      try {
+        // 複数のセル位置をチェックして柔軟にデータを取得
+        var channelName = getValueFromMultipleCells(latestAnalysis, ["C6", "C4", "B6", "B4"]);
+        var subscribers = getValueFromMultipleCells(latestAnalysis, ["C14", "C15", "B14", "B15"]);
+        var totalViews = getValueFromMultipleCells(latestAnalysis, ["C15", "C16", "B15", "B16"]);
+        var videoCount = getValueFromMultipleCells(latestAnalysis, ["C16", "C17", "B16", "B17"]);
+        var createdDate = getValueFromMultipleCells(latestAnalysis, ["C8", "C13", "B8", "B13"]);
+        
+        // データを表示
+        dashboard.getRange("B15").setValue(channelName || "取得中...");
+        dashboard.getRange("B16").setValue(subscribers || "取得中...");
+        dashboard.getRange("B17").setValue(totalViews || "取得中...");
+        dashboard.getRange("B18").setValue(videoCount || "取得中...");
+        dashboard.getRange("B19").setValue(createdDate || "取得中...");
+        
+        // 数値計算（エラー処理強化）
+        var subscriberNum = extractNumberSafely(subscribers);
+        var viewsNum = extractNumberSafely(totalViews);
+        var videosNum = extractNumberSafely(videoCount);
+        
+        if (subscriberNum > 0 && viewsNum > 0 && videosNum > 0) {
+          var avgViews = Math.round(viewsNum / videosNum);
+          var engagementRate = (avgViews / subscriberNum * 100);
+          
+          dashboard.getRange("B20").setValue(avgViews.toLocaleString());
+          dashboard.getRange("B21").setValue(engagementRate.toFixed(2) + "%");
+          
+          // 総合評価
+          var rating = calculateOverallRating(subscriberNum, engagementRate, videosNum);
+          dashboard.getRange("B22").setValue(rating.score + "/100 (" + rating.grade + ")");
+          
+          // 改善提案を生成
+          var suggestions = generateImprovementSuggestions(subscriberNum, engagementRate, videosNum);
+          dashboard.getRange("A25").setValue(suggestions);
+        }
+        
+      } catch (e) {
+        Logger.log("分析データ表示エラー: " + e.toString());
+        dashboard.getRange("A25").setValue(
+          "分析データの表示中にエラーが発生しました。\n" +
+          "メニューから「④ 個別チャンネル分析」を再実行してください。"
+        );
+      }
+    } else {
+      // 分析データがない場合の初期状態
+      var labels = ["未分析", "未分析", "未分析", "未分析", "未分析", "未分析", "未分析", "未分析"];
+      for (var i = 0; i < labels.length; i++) {
+        dashboard.getRange(15 + i, 2).setValue(labels[i]);
+      }
+      
+      dashboard.getRange("A25").setValue(
+        "まだ分析が実行されていません。\n\n" +
+        "📌 はじめ方:\n" +
+        "1. メニュー「YouTube ツール > ① API設定・テスト」\n" +
+        "2. B8セルにチャンネルURL入力\n" +
+        "3. B9セルに「分析」と入力してEnter"
+      );
+    }
+    
+    // 最終更新時間を記録
+    dashboard.getRange("A2").setValue(
+      "メニューベース操作 - 確実に動作します | 最終更新: " + 
+      new Date().toLocaleTimeString()
+    );
+    
+  } catch (error) {
+    Logger.log("ダッシュボード表示更新エラー: " + error.toString());
+  }
+}
+
+/**
+ * 複数のセルから値を取得するヘルパー関数
+ */
+function getValueFromMultipleCells(sheet, cellAddresses) {
+  for (var i = 0; i < cellAddresses.length; i++) {
+    try {
+      var value = sheet.getRange(cellAddresses[i]).getValue();
+      if (value && value.toString().trim() !== "") {
+        return value;
+      }
+    } catch (e) {
+      // セルが存在しない場合は次を試す
+      continue;
+    }
+  }
+  return null;
+}
+
+/**
+ * 安全な数値抽出
+ */
+function extractNumberSafely(value) {
+  try {
+    if (!value) return 0;
+    var numStr = value.toString().replace(/[,\s]/g, "");
+    var num = parseInt(numStr);
+    return isNaN(num) ? 0 : num;
+  } catch (e) {
+    return 0;
+  }
+}
+
+/**
+ * 総合評価を計算
+ */
+function calculateOverallRating(subscribers, engagementRate, videoCount) {
+  var score = 0;
+  var grade = "";
+  
+  // 登録者数スコア (30点満点)
+  if (subscribers >= 100000) score += 30;
+  else if (subscribers >= 10000) score += 25;
+  else if (subscribers >= 1000) score += 20;
+  else if (subscribers >= 100) score += 15;
+  else score += 10;
+  
+  // エンゲージメント率スコア (40点満点)
+  if (engagementRate >= 10) score += 40;
+  else if (engagementRate >= 5) score += 35;
+  else if (engagementRate >= 2) score += 25;
+  else if (engagementRate >= 1) score += 15;
+  else score += 5;
+  
+  // 動画数スコア (30点満点)
+  if (videoCount >= 100) score += 30;
+  else if (videoCount >= 50) score += 25;
+  else if (videoCount >= 20) score += 20;
+  else if (videoCount >= 10) score += 15;
+  else score += 10;
+  
+  // グレード判定
+  if (score >= 90) grade = "S級";
+  else if (score >= 80) grade = "A級";
+  else if (score >= 70) grade = "B級";
+  else if (score >= 60) grade = "C級";
+  else grade = "成長段階";
+  
+  return { score: score, grade: grade };
+}
+
+/**
+ * 改善提案を生成
+ */
+function generateImprovementSuggestions(subscribers, engagementRate, videoCount) {
+  var suggestions = ["💡 改善提案・次のアクション\n"];
+  
+  if (subscribers < 1000) {
+    suggestions.push("🎯 最優先: 収益化条件の1000人達成に向けた施策");
+  } else if (subscribers < 10000) {
+    suggestions.push("📈 目標: 1万人達成で中規模チャンネルへ");
+  } else if (subscribers < 100000) {
+    suggestions.push("🌟 目標: 10万人達成で大規模チャンネルへ");
+  }
+  
+  if (engagementRate < 1) {
+    suggestions.push("⚡ 緊急: エンゲージメント率向上が必要（現在" + engagementRate.toFixed(2) + "%）");
+  } else if (engagementRate < 3) {
+    suggestions.push("📊 推奨: エンゲージメント率をさらに向上（目標3%以上）");
+  }
+  
+  if (videoCount < 10) {
+    suggestions.push("🎬 コンテンツ: 動画数を増やして認知度向上");
+  } else if (videoCount > 200) {
+    suggestions.push("📚 整理: プレイリスト整理で視聴しやすさ向上");
+  }
+  
+  suggestions.push("\n📋 次のアクション:");
+  suggestions.push("• メニューから「③ ベンチマークレポート作成」で詳細分析");
+  suggestions.push("• 定期的に分析を実行してトレンド確認");
+  
+  return suggestions.join("\n");
+}
+
+/**
+ * セル変更イベントハンドラ（B9セル専用）
+ */
+function handleQuickAction(command) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var dashboard = ss.getSheetByName("📊 YouTube チャンネル分析");
+    
+    if (!dashboard) return;
+    
+    command = command.toString().toLowerCase().trim();
+    
+    switch (command) {
+      case "分析":
+        executeChannelAnalysis();
+        break;
+      case "api":
+        setApiKey();
+        break;
+      case "レポート":
+        createBenchmarkReport();
+        break;
+      case "更新":
+        updateDashboardDisplay();
+        SpreadsheetApp.getUi().alert("ダッシュボードを更新しました");
+        break;
+      default:
+        SpreadsheetApp.getUi().alert(
+          "不明なコマンド",
+          "利用可能なコマンド: 分析, API, レポート, 更新",
+          SpreadsheetApp.getUi().ButtonSet.OK
+        );
+    }
+    
+    // コマンド実行後、セルをクリア
+    dashboard.getRange("B9").setValue("ここに「分析」と入力してEnter");
+    dashboard.getRange("B9").setBackground("#fff0f0");
+    
+  } catch (error) {
+    Logger.log("クイックアクション実行エラー: " + error.toString());
+    SpreadsheetApp.getUi().alert(
+      "実行エラー",
+      "コマンド実行中にエラーが発生しました: " + error.toString(),
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * チャンネル分析を実行
+ */
+function executeChannelAnalysis() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var dashboard = ss.getSheetByName("📊 YouTube チャンネル分析");
+    
+    if (!dashboard) return;
+    
+    // チャンネル入力を取得
+    var channelInput = dashboard.getRange("B8").getValue();
+    
+    if (!channelInput || channelInput.toString().trim() === "" || channelInput === "チャンネルURL or @ハンドル") {
+      SpreadsheetApp.getUi().alert(
+        "入力エラー",
+        "B8セルにチャンネルURLまたは@ハンドル名を入力してください。\n\n例: https://www.youtube.com/@YouTube\nまたは: @YouTube",
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+      return;
+    }
+    
+    // API設定確認
+    var apiKey = PropertiesService.getScriptProperties().getProperty("YOUTUBE_API_KEY");
+    if (!apiKey) {
+      SpreadsheetApp.getUi().alert(
+        "API設定が必要",
+        "先にメニューから「① API設定・テスト」を実行してください。",
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+      return;
+    }
+    
+    // 分析実行表示
+    dashboard.getRange("B15").setValue("分析実行中...");
+    SpreadsheetApp.flush();
+    
+    // ハンドル名を抽出・正規化
+    var handle = normalizeChannelInput(channelInput.toString());
+    
+    if (!handle) {
+      SpreadsheetApp.getUi().alert(
+        "入力形式エラー",
+        "正しいYouTubeチャンネルURL または @ハンドル名を入力してください。",
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+      return;
+    }
+    
+    // 一時的にハンドル名を保存して既存関数を呼び出し
+    PropertiesService.getDocumentProperties().setProperty("TEMP_HANDLE", handle);
+    
+    // 既存の分析機能を呼び出し
+    analyzeExistingChannel();
+    
+    // 分析完了後、ダッシュボードを更新
+    Utilities.sleep(2000);
+    updateDashboardDisplay();
+    
+    SpreadsheetApp.getUi().alert(
+      "✅ 分析完了",
+      "チャンネル分析が完了しました！\n\nダッシュボードに結果が表示されます。\n詳細は新しく作成された分析シートでご確認ください。",
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    
+  } catch (error) {
+    Logger.log("チャンネル分析実行エラー: " + error.toString());
+    SpreadsheetApp.getUi().alert(
+      "分析エラー",
+      "分析中にエラーが発生しました: " + error.toString(),
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * チャンネル入力を正規化
+ */
+function normalizeChannelInput(input) {
+  try {
+    input = input.trim();
+    
+    // YouTubeのURL形式の場合
+    if (input.includes("youtube.com")) {
+      if (input.includes("/@")) {
+        return "@" + input.split("/@")[1].split("/")[0];
+      } else if (input.includes("/c/")) {
+        return "@" + input.split("/c/")[1].split("/")[0];
+      } else if (input.includes("/channel/")) {
+        return input.split("/channel/")[1].split("/")[0];
+      }
+    }
+    
+    // @ハンドル形式の場合
+    if (input.startsWith("@")) {
+      return input;
+    }
+    
+    // その他の場合は@を付加
+    if (!input.startsWith("UC") && input.length > 2) {
+      return "@" + input;
+    }
+    
+    return input;
+  } catch (e) {
+    return null;
   }
 }
 
