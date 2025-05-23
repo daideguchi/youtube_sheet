@@ -44,7 +44,7 @@ function createImprovedUserInterface() {
     .addItem("🔑 OAuth認証再設定", "setupOAuth")
     .addItem("✅ 認証完了", "completeAuthentication")
     .addItem("🔍 認証状態テスト", "testOAuthStatus")
-    .addItem("🔍 OAuth状態デバッグ", "debugOAuthStatus")  // 追加
+    .addItem("🔍 OAuth状態デバッグ", "debugOAuthStatus")
     .addSeparator()
     .addItem("🚀 ワンクリック完全分析", "generateCompleteReport")
     .addItem("🔍 基本チャンネル分析のみ実行", "runChannelAnalysis")
@@ -55,6 +55,7 @@ function createImprovedUserInterface() {
         .addItem("📈 動画別パフォーマンス分析", "analyzeVideoPerformance")
         .addItem("👥 視聴者層分析", "analyzeAudience")
         .addItem("❤️ エンゲージメント分析", "analyzeEngagement")
+        .addItem("👍 いいね率分析", "analyzeLikeRate")
         .addItem("🔀 トラフィックソース分析", "analyzeTrafficSources")
     )
     .addSeparator()
@@ -134,7 +135,7 @@ function checkH7Status() {
 function setupImprovedDashboardHeaders(dashboardSheet) {
   // メインヘッダー部分の設定
   dashboardSheet
-    .getRange("A1:H1")
+    .getRange("A1:I1")  // I列まで拡張
     .merge()
     .setValue("YouTube チャンネル分析ダッシュボード")
     .setFontSize(16)
@@ -167,9 +168,9 @@ function setupImprovedDashboardHeaders(dashboardSheet) {
     .setFontWeight("bold");
   dashboardSheet.getRange("A4").setValue("分析日:").setFontWeight("bold");
 
-  // **重要：主要指標見出しを確実に設定**
+  // 主要指標見出しを確実に設定
   dashboardSheet
-    .getRange("A6:H6")
+    .getRange("A6:I6")  // I列まで拡張
     .merge()
     .setValue("主要パフォーマンス指標")
     .setFontSize(14)
@@ -178,88 +179,36 @@ function setupImprovedDashboardHeaders(dashboardSheet) {
     .setFontColor("white")
     .setHorizontalAlignment("center");
 
-  // **最重要：主要指標ラベルを個別に確実に設定（特にH7を保護）**
-  dashboardSheet.getRange("A7").setValue("登録者数").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("B7").setValue("総再生回数").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("C7").setValue("登録率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("D7").setValue("エンゲージメント率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("E7").setValue("視聴維持率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("F7").setValue("平均視聴時間").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("G7").setValue("クリック率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  
-  // **特にH7を強力に保護**
-  dashboardSheet
-    .getRange("H7")
-    .setValue("平均再生回数")
-    .setFontWeight("bold")
-    .setBackground("#E8F0FE")
-    .setHorizontalAlignment("center");
-
-  // データ行を準備
-  dashboardSheet.getRange("A8:H8").setHorizontalAlignment("center");
-
-  // 状態表示見出し
-  dashboardSheet
-    .getRange("A9:H9")
-    .merge()
-    .setValue("API接続状態")
-    .setFontWeight("bold")
-    .setBackground("#4285F4")
-    .setFontColor("white")
-    .setHorizontalAlignment("center");
-
-  // 状態表示
-  dashboardSheet.getRange("A10").setValue("API状態:").setFontWeight("bold");
-  dashboardSheet.getRange("A11").setValue("OAuth状態:").setFontWeight("bold");
-
-  // 使い方ガイド
-  dashboardSheet
-    .getRange("A13:H13")
-    .merge()
-    .setValue("分析手順")
-    .setFontWeight("bold")
-    .setBackground("#4285F4")
-    .setFontColor("white")
-    .setHorizontalAlignment("center");
-
-  const instructions = [
-    [
-      "1.",
-      "APIキー設定: 「YouTube分析」メニュー→「APIキー設定」でGoogle API Consoleのキーを設定",
-    ],
-    [
-      "2.",
-      "OAuth認証: 「YouTube分析」メニュー→「OAuth認証再設定」でチャンネル所有者として認証",
-    ],
-    [
-      "3.",
-      "チャンネル入力: 上の入力欄に@ハンドル（例: @YouTube）またはチャンネルIDを入力",
-    ],
-    ["4.", "完全分析: 「ワンクリック完全分析」で全ての分析を一度に実行"],
-    [
-      "5.",
-      "個別分析: 必要に応じて「個別分析モジュール」から特定の分析を実行",
-    ],
+  // 主要指標ラベルを個別に確実に設定
+  const headers = [
+    { cell: "A7", value: "登録者数" },
+    { cell: "B7", value: "総再生回数" },
+    { cell: "C7", value: "登録率" },
+    { cell: "D7", value: "エンゲージメント率" },
+    { cell: "E7", value: "視聴維持率" },
+    { cell: "F7", value: "平均視聴時間" },
+    { cell: "G7", value: "クリック率" },
+    { cell: "H7", value: "平均再生回数" },
+    { cell: "I7", value: "いいね率" }  // 新規追加
   ];
 
-  dashboardSheet.getRange("A14:B18").setValues(instructions);
-  dashboardSheet
-    .getRange("A14:A18")
-    .setHorizontalAlignment("center")
-    .setFontWeight("bold");
+  headers.forEach(header => {
+    dashboardSheet
+      .getRange(header.cell)
+      .setValue(header.value)
+      .setFontWeight("bold")
+      .setBackground("#E8F0FE")
+      .setHorizontalAlignment("center");
+  });
 
-  // 列幅の調整
-  dashboardSheet.setColumnWidth(1, 120);
-  dashboardSheet.setColumnWidth(2, 150);
-  dashboardSheet.setColumnWidth(3, 120);
-  dashboardSheet.setColumnWidth(4, 150);
-  dashboardSheet.setColumnWidth(5, 120);
-  dashboardSheet.setColumnWidth(6, 120);
-  dashboardSheet.setColumnWidth(7, 120);
-  dashboardSheet.setColumnWidth(8, 120);
+  // データ行を準備
+  dashboardSheet.getRange("A8:I8").setHorizontalAlignment("center");  // I列まで拡張
 
-  // **最後にH7を再度強制確認**
-  protectH7Header(dashboardSheet);
+  // 列幅の自動調整
+  dashboardSheet.autoResizeColumns(1, 9);  // A列からI列まで
+
+  // セルの書式設定
+  dashboardSheet.getRange("A8:I8").setNumberFormat("#,##0.00");
 
   // 初期フォーカスの設定
   dashboardSheet.getRange("D2").activate();
@@ -391,7 +340,7 @@ function calculateAdvancedMetricsWithLikeRate(analyticsData, sheet) {
     }
 
     // **最後に見出し行を再確認**
-    const allHeaders = ["登録者数", "総再生回数", "登録率", "エンゲージメント率", "視聴維持率", "平均視聴時間", "クリック率", "平均再生回数"];
+    const allHeaders = ["登録者数", "総再生回数", "登録率", "エンゲージメント率", "視聴維持率", "平均視聴時間", "クリック率", "平均再生回数", "いいね率"];
     
     for (let i = 0; i < allHeaders.length; i++) {
       const cellValue = sheet.getRange(7, i + 1).getValue();
@@ -657,10 +606,11 @@ function completeOAuthProcess(clientId, clientSecret, redirectUri) {
 function completeAuthentication() {
   const clientId = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_ID");
   const clientSecret = PropertiesService.getScriptProperties().getProperty("OAUTH_CLIENT_SECRET");
-  const webAppUrl = "https://script.google.com/macros/s/AKfycbz63hfa8tBjm3BxsyQYfCRme5EkQNqdxMIbBsqFf-qbjv-6VWwtemy11zMje3YKqpmLFA/exec";
+  const webAppUrl = getWebAppUrl();
   
   completeOAuthProcess(clientId, clientSecret, webAppUrl);
 }
+
 /**
  * WebアプリのURLを取得（正しい方法）
  */
@@ -741,7 +691,6 @@ function completeAuthentication() {
   
   completeOAuthProcess(clientId, clientSecret, webAppUrl);
 }
-
 
 /**
  * APIキーを設定するダイアログ
@@ -2235,7 +2184,7 @@ function calculateAdvancedMetricsWithLikeRate(analyticsData, sheet) {
     }
 
     // **最後に見出し行を再確認**
-    const allHeaders = ["登録者数", "総再生回数", "登録率", "エンゲージメント率", "視聴維持率", "平均視聴時間", "クリック率", "平均再生回数"];
+    const allHeaders = ["登録者数", "総再生回数", "登録率", "エンゲージメント率", "視聴維持率", "平均視聴時間", "クリック率", "平均再生回数", "いいね率"];
     
     for (let i = 0; i < allHeaders.length; i++) {
       const cellValue = sheet.getRange(7, i + 1).getValue();
@@ -7608,7 +7557,7 @@ function createImprovedUserInterface() {
 function setupImprovedDashboardHeaders(dashboardSheet) {
   // メインヘッダー部分の設定
   dashboardSheet
-    .getRange("A1:I1")
+    .getRange("A1:I1")  // I列まで拡張
     .merge()
     .setValue("YouTube チャンネル分析ダッシュボード")
     .setFontSize(16)
@@ -7641,9 +7590,9 @@ function setupImprovedDashboardHeaders(dashboardSheet) {
     .setFontWeight("bold");
   dashboardSheet.getRange("A4").setValue("分析日:").setFontWeight("bold");
 
-  // **重要：主要指標見出しを確実に設定（I列まで拡張）**
+  // 主要指標見出しを確実に設定
   dashboardSheet
-    .getRange("A6:I6")
+    .getRange("A6:I6")  // I列まで拡張
     .merge()
     .setValue("主要パフォーマンス指標")
     .setFontSize(14)
@@ -7652,86 +7601,36 @@ function setupImprovedDashboardHeaders(dashboardSheet) {
     .setFontColor("white")
     .setHorizontalAlignment("center");
 
-  // **改善：主要指標ラベルに高評価率を追加**
+  // 主要指標ラベルを個別に確実に設定
   const headers = [
-    "登録者数",
-    "総再生回数", 
-    "登録率",
-    "エンゲージメント率",
-    "視聴維持率",
-    "平均視聴時間",
-    "クリック率",
-    "平均再生回数",
-    "高評価率"  // 新規追加
+    { cell: "A7", value: "登録者数" },
+    { cell: "B7", value: "総再生回数" },
+    { cell: "C7", value: "登録率" },
+    { cell: "D7", value: "エンゲージメント率" },
+    { cell: "E7", value: "視聴維持率" },
+    { cell: "F7", value: "平均視聴時間" },
+    { cell: "G7", value: "クリック率" },
+    { cell: "H7", value: "平均再生回数" },
+    { cell: "I7", value: "いいね率" }  // 新規追加
   ];
-  
-  for (let i = 0; i < headers.length; i++) {
+
+  headers.forEach(header => {
     dashboardSheet
-      .getRange(7, i + 1)
-      .setValue(headers[i])
+      .getRange(header.cell)
+      .setValue(header.value)
       .setFontWeight("bold")
       .setBackground("#E8F0FE")
       .setHorizontalAlignment("center");
-  }
+  });
 
-  // データ行を準備（I列も含める）
-  dashboardSheet.getRange("A8:I8").setHorizontalAlignment("center");
+  // データ行を準備
+  dashboardSheet.getRange("A8:I8").setHorizontalAlignment("center");  // I列まで拡張
 
-  // 状態表示見出し
-  dashboardSheet
-    .getRange("A9:I9")
-    .merge()
-    .setValue("API接続状態")
-    .setFontWeight("bold")
-    .setBackground("#4285F4")
-    .setFontColor("white")
-    .setHorizontalAlignment("center");
+  // 列幅の自動調整
+  dashboardSheet.autoResizeColumns(1, 9);  // A列からI列まで
 
-  // 状態表示
-  dashboardSheet.getRange("A10").setValue("API状態:").setFontWeight("bold");
-  dashboardSheet.getRange("A11").setValue("OAuth状態:").setFontWeight("bold");
-
-  // 使い方ガイド
-  dashboardSheet
-    .getRange("A13:I13")
-    .merge()
-    .setValue("分析手順")
-    .setFontWeight("bold")
-    .setBackground("#4285F4")
-    .setFontColor("white")
-    .setHorizontalAlignment("center");
-
-  const instructions = [
-    [
-      "1.",
-      "APIキー設定: 「🔧 初期設定」→「APIキー設定」でGoogle API Consoleのキーを設定",
-    ],
-    [
-      "2.",
-      "OAuth認証: 「🔧 初期設定」→「OAuth認証設定」でチャンネル所有者として認証",
-    ],
-    [
-      "3.",
-      "チャンネル入力: 上の入力欄に@ハンドル（例: @YouTube）またはチャンネルIDを入力",
-    ],
-    ["4.", "完全分析: 「📊 分析実行」→「ワンクリック完全分析（推奨）」で全ての分析を一度に実行"],
-    [
-      "5.",
-      "個別分析: 必要に応じて「🔍 詳細分析」から特定の分析を実行",
-    ],
-  ];
-
-  dashboardSheet.getRange("A14:B18").setValues(instructions);
-  dashboardSheet
-    .getRange("A14:A18")
-    .setHorizontalAlignment("center")
-    .setFontWeight("bold");
-
-  // 列幅の調整（I列も含める）
-  const columnWidths = [120, 150, 120, 150, 120, 120, 120, 120, 120];
-  for (let i = 0; i < columnWidths.length; i++) {
-    dashboardSheet.setColumnWidth(i + 1, columnWidths[i]);
-  }
+  // セルの書式設定
+  dashboardSheet.getRange("A8:I8").setNumberFormat("#,##0.00");
 
   // 初期フォーカスの設定
   dashboardSheet.getRange("D2").activate();
@@ -7742,7 +7641,7 @@ function setupImprovedDashboardHeaders(dashboardSheet) {
  */
 function calculateAdvancedMetricsWithLikeRate(analyticsData, sheet) {
   try {
-    // **最初に改善されたヘッダーを設定**
+    // 改善されたヘッダーを設定
     setupImprovedDashboardHeaders(sheet);
 
     // 基本データが存在する場合のみ計算を実行
@@ -7762,7 +7661,7 @@ function calculateAdvancedMetricsWithLikeRate(analyticsData, sheet) {
       const minutes = Math.floor(averageViewDuration / 60);
       const seconds = Math.floor(averageViewDuration % 60);
 
-      // **重要：データは8行目に書き込む**
+      // データは8行目に書き込む
       sheet
         .getRange("F8")  // 平均視聴時間
         .setValue(`${minutes}:${seconds.toString().padStart(2, "0")}`);
@@ -7854,7 +7753,7 @@ function calculateAdvancedMetricsWithLikeRate(analyticsData, sheet) {
           .getRange("D8")  // エンゲージメント率
           .setValue(engagementRate.toFixed(2) + "%");
 
-        // **新規追加：高評価率 = いいね数 / 総視聴回数**
+        // 高評価率 = いいね数 / 総視聴回数
         const likeRate = totalViews > 0 ? (totalLikes / totalViews) * 100 : 0;
         sheet
           .getRange("I8")  // 高評価率（新規追加）
