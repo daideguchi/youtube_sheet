@@ -1339,4 +1339,208 @@ function normalizeChannelInput(input) {
     Logger.log("入力正規化エラー: " + e.toString());
     return null;
   }
+}
+
+/**
+ * 統合ダッシュボード専用のチャンネル分析関数
+ */
+function executeUnifiedChannelAnalysis(handle, apiKey) {
+  try {
+    Logger.log("統合チャンネル分析開始: " + handle);
+    
+    // チャンネル情報を取得
+    var channelInfo = getChannelByHandleUnified(handle, apiKey);
+    
+    if (!channelInfo) {
+      return {
+        success: false,
+        error: "チャンネルが見つかりませんでした: " + handle
+      };
+    }
+    
+    var snippet = channelInfo.snippet;
+    var statistics = channelInfo.statistics;
+    
+    // 基本データを取得
+    var channelName = snippet.title;
+    var subscribers = parseInt(statistics.subscriberCount || 0);
+    var totalViews = parseInt(statistics.viewCount || 0);
+    var videoCount = parseInt(statistics.videoCount || 0);
+    var createdDate = snippet.publishedAt;
+    
+    // 分析シートを作成
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheetName = "分析_" + channelName.substring(0, 20).replace(/[/\\?*\[\]]/g, "");
+    
+    // 既存のシートがあれば削除
+    var existingSheet = ss.getSheetByName(sheetName);
+    if (existingSheet) {
+      ss.deleteSheet(existingSheet);
+    }
+    
+    // 新しい分析シートを作成
+    var analysisSheet = ss.insertSheet(sheetName);
+    
+    // ヘッダー
+    analysisSheet.getRange("A1").setValue("📊 チャンネル分析レポート（統合版）");
+    analysisSheet.getRange("A2").setValue("分析日時: " + new Date().toLocaleString());
+    analysisSheet.getRange("A3").setValue("対象チャンネル: " + channelName);
+    
+    // 基本情報セクション
+    analysisSheet.getRange("A5").setValue("📋 基本情報");
+    
+    var basicInfo = [
+      ["チャンネル名", channelName],
+      ["ハンドル名", handle],
+      ["チャンネルID", channelInfo.id],
+      ["開設日", new Date(createdDate).toLocaleDateString()],
+      ["説明", snippet.description ? snippet.description.substring(0, 200) + "..." : ""],
+      ["国", snippet.country || "不明"]
+    ];
+    
+    for (var i = 0; i < basicInfo.length; i++) {
+      analysisSheet.getRange(6 + i, 1).setValue(basicInfo[i][0] + ":");
+      analysisSheet.getRange(6 + i, 3).setValue(basicInfo[i][1]);
+    }
+    
+    // パフォーマンス指標セクション
+    analysisSheet.getRange("A13").setValue("📈 パフォーマンス指標");
+    
+    var avgViews = videoCount > 0 ? Math.round(totalViews / videoCount) : 0;
+    var engagementRate = subscribers > 0 ? (avgViews / subscribers * 100) : 0;
+    var subscriberRate = totalViews > 0 ? (subscribers / totalViews * 100) : 0;
+    
+    var metrics = [
+      ["登録者数", subscribers.toLocaleString() + " 人"],
+      ["総視聴回数", totalViews.toLocaleString() + " 回"],
+      ["動画数", videoCount.toLocaleString() + " 本"],
+      ["平均視聴回数/動画", avgViews.toLocaleString() + " 回"],
+      ["エンゲージメント率", engagementRate.toFixed(2) + "%"],
+      ["チャンネル登録率", subscriberRate.toFixed(4) + "%"]
+    ];
+    
+    for (var i = 0; i < metrics.length; i++) {
+      analysisSheet.getRange(14 + i, 1).setValue(metrics[i][0] + ":");
+      analysisSheet.getRange(14 + i, 3).setValue(metrics[i][1]);
+    }
+    
+    // 総合評価を計算
+    var overallRating = calculateOverallRating(subscribers, engagementRate, videoCount);
+    
+    analysisSheet.getRange("A21").setValue("🏆 総合評価");
+    analysisSheet.getRange("B22").setValue("スコア:");
+    analysisSheet.getRange("C22").setValue(overallRating.score + "/100 (" + overallRating.grade + ")");
+    
+    // サムネイル画像
+    if (snippet.thumbnails && snippet.thumbnails.high) {
+      var imageFormula = '=IMAGE("' + snippet.thumbnails.high.url + '", 1)';
+      analysisSheet.getRange("F1").setValue(imageFormula);
+      analysisSheet.setRowHeight(1, 80);
+    }
+    
+    // 改善提案
+    analysisSheet.getRange("A24").setValue("💡 改善提案");
+    var suggestions = generateImprovementSuggestions(subscribers, engagementRate, videoCount);
+    analysisSheet.getRange("A25:F27").merge();
+    analysisSheet.getRange("A25").setValue(suggestions);
+    
+    // フォーマット適用
+    formatUnifiedAnalysisSheet(analysisSheet);
+    
+    // 結果を返す
+    return {
+      success: true,
+      channelName: channelName,
+      subscribers: subscribers,
+      totalViews: totalViews,
+      videoCount: videoCount,
+      avgViews: avgViews,
+      engagementRate: engagementRate,
+      subscriberRate: subscriberRate,
+      score: overallRating.score,
+      grade: overallRating.grade,
+      sheetName: sheetName
+    };
+    
+  } catch (error) {
+    Logger.log("統合チャンネル分析エラー: " + error.toString());
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * 統合ダッシュボード用のチャンネル取得関数
+ */
+function getChannelByHandleUnified(handle, apiKey) {
+  try {
+    var username = handle.replace("@", "");
+    var options = {
+      method: "get",
+      muteHttpExceptions: true,
+    };
+
+    // 検索APIを使用
+    var searchUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + 
+                   encodeURIComponent(handle) + "&type=channel&maxResults=5&key=" + apiKey;
+
+    var searchResponse = UrlFetchApp.fetch(searchUrl, options);
+    var searchData = JSON.parse(searchResponse.getContentText());
+
+    if (searchData && searchData.items && searchData.items.length > 0) {
+      var channelId = searchData.items[0].id.channelId;
+
+      // チャンネルの詳細情報を取得
+      var channelUrl = "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=" + 
+                      channelId + "&key=" + apiKey;
+
+      var channelResponse = UrlFetchApp.fetch(channelUrl, options);
+      var channelData = JSON.parse(channelResponse.getContentText());
+
+      if (channelData && channelData.items && channelData.items.length > 0) {
+        return channelData.items[0];
+      }
+    }
+
+    return null;
+  } catch (error) {
+    Logger.log("統合チャンネル取得エラー: " + error.toString());
+    return null;
+  }
+}
+
+/**
+ * 統合分析シートのフォーマット
+ */
+function formatUnifiedAnalysisSheet(sheet) {
+  // ヘッダー
+  sheet.getRange("A1:F1").merge();
+  sheet.getRange("A1").setFontSize(18).setFontWeight("bold")
+    .setBackground("#1a73e8").setFontColor("white")
+    .setHorizontalAlignment("center");
+  
+  sheet.getRange("A2").setFontStyle("italic");
+  sheet.getRange("A3").setFontWeight("bold");
+  
+  // セクションヘッダー
+  sheet.getRange("A5").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  sheet.getRange("A13").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  sheet.getRange("A21").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  sheet.getRange("A24").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  
+  // 枠線
+  sheet.getRange("A6:D11").setBorder(true, true, true, true, true, true);
+  sheet.getRange("A14:D19").setBorder(true, true, true, true, true, true);
+  sheet.getRange("A22:D22").setBorder(true, true, true, true, true, true);
+  sheet.getRange("A25:F27").setBorder(true, true, true, true, false, false);
+  
+  // 列幅調整
+  sheet.setColumnWidth(1, 150);
+  sheet.setColumnWidth(2, 20);
+  sheet.setColumnWidth(3, 200);
+  sheet.setColumnWidth(4, 150);
+  sheet.setColumnWidth(5, 20);
+  sheet.setColumnWidth(6, 150);
 } 
