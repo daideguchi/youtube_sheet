@@ -1543,4 +1543,1346 @@ function formatUnifiedAnalysisSheet(sheet) {
   sheet.setColumnWidth(4, 150);
   sheet.setColumnWidth(5, 20);
   sheet.setColumnWidth(6, 150);
-} 
+}
+
+/**
+ * 包括的一括分析システム - 既存機能統合版
+ */
+function executeComprehensiveAnalysis() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var dashboard = ss.getSheetByName("📊 YouTube チャンネル分析");
+    var ui = SpreadsheetApp.getUi();
+    
+    if (!dashboard) {
+      ui.alert("エラー", "統合ダッシュボードが見つかりません。", ui.ButtonSet.OK);
+      return;
+    }
+    
+    // チャンネル入力を確認
+    var channelInput = dashboard.getRange("B8").getValue();
+    
+    if (!channelInput || channelInput.toString().trim() === "" || 
+        channelInput === "チャンネルURL or @ハンドル" ||
+        channelInput.toString().startsWith("例:")) {
+      ui.alert(
+        "入力エラー",
+        "B8セルに分析対象のチャンネルを入力してください。\n\n" +
+        "対応形式:\n" +
+        "• @ハンドル名（例: @YouTube）\n" +
+        "• チャンネルURL\n" +
+        "• チャンネルID",
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    // API設定確認
+    var apiKey = PropertiesService.getScriptProperties().getProperty("YOUTUBE_API_KEY");
+    if (!apiKey) {
+      ui.alert(
+        "API設定が必要",
+        "先にメニューから「① API設定・テスト」を実行してください。",
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    // 詳細分析の確認
+    var response = ui.alert(
+      "包括的チャンネル分析",
+      "以下の分析を実行します：\n\n" +
+      "📊 基本分析: 登録者数、視聴回数、エンゲージメント率\n" +
+      "📈 動画別分析: パフォーマンス、トレンド分析\n" +
+      "👥 視聴者分析: 年齢層、地域、デバイス別\n" +
+      "💡 AI改善提案: データに基づく具体的施策\n" +
+      "📋 ギャップ分析: 業界基準との比較\n" +
+      "🎯 アクションプラン: 優先度付き改善計画\n\n" +
+      "この処理には2-5分かかります。実行しますか？",
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (response !== ui.Button.YES) {
+      return;
+    }
+    
+    // プログレス表示
+    dashboard.getRange("B15").setValue("包括的分析実行中...");
+    dashboard.getRange("A25").setValue("分析を開始しています。しばらくお待ちください...");
+    SpreadsheetApp.flush();
+    
+    // チャンネル情報を解決してB8セルに正規化
+    var normalizedInput = normalizeChannelInput(channelInput.toString());
+    if (normalizedInput) {
+      dashboard.getRange("B8").setValue(normalizedInput);
+      SpreadsheetApp.flush();
+    }
+    
+    // ステップ1: 基本統合分析
+    dashboard.getRange("A25").setValue("ステップ 1/6: 基本チャンネル分析実行中...");
+    SpreadsheetApp.flush();
+    
+    var basicResult = executeUnifiedChannelAnalysis(normalizedInput, apiKey);
+    if (!basicResult.success) {
+      throw new Error("基本分析に失敗: " + basicResult.error);
+    }
+    
+    // ダッシュボードに基本結果を反映
+    updateDashboardWithResults(dashboard, basicResult);
+    
+    // ステップ2: 既存の高度分析機能を活用
+    dashboard.getRange("A25").setValue("ステップ 2/6: 詳細分析モジュール実行中...");
+    SpreadsheetApp.flush();
+    
+    // 4_channelCheck.gsの高度機能を呼び出し
+    var advancedResults = executeAdvancedAnalysisModules(normalizedInput, apiKey);
+    
+    // ステップ3: ギャップ分析の実行
+    dashboard.getRange("A25").setValue("ステップ 3/6: 業界基準ギャップ分析中...");
+    SpreadsheetApp.flush();
+    
+    var gapAnalysis = performGapAnalysis(basicResult, advancedResults);
+    
+    // ステップ4: 競合比較分析
+    dashboard.getRange("A25").setValue("ステップ 4/6: 競合比較分析中...");
+    SpreadsheetApp.flush();
+    
+    var competitorAnalysis = performCompetitorAnalysis(basicResult);
+    
+    // ステップ5: AI改善提案の強化
+    dashboard.getRange("A25").setValue("ステップ 5/6: AI改善提案生成中...");
+    SpreadsheetApp.flush();
+    
+    var aiRecommendations = generateEnhancedAIRecommendations(basicResult, gapAnalysis, competitorAnalysis);
+    
+    // ステップ6: 包括的レポート作成
+    dashboard.getRange("A25").setValue("ステップ 6/6: 包括的レポート作成中...");
+    SpreadsheetApp.flush();
+    
+    var comprehensiveReport = createComprehensiveAnalysisReport(
+      basicResult, advancedResults, gapAnalysis, competitorAnalysis, aiRecommendations
+    );
+    
+    // 最終更新
+    updateDashboardWithComprehensiveResults(dashboard, comprehensiveReport);
+    
+    // 完了通知
+    ui.alert(
+      "✅ 包括的分析完了",
+      "全ての分析が完了しました！\n\n" +
+      "📊 作成されたレポート:\n" +
+      "• " + comprehensiveReport.summarySheetName + "\n" +
+      "• " + comprehensiveReport.gapAnalysisSheetName + "\n" +
+      "• " + comprehensiveReport.actionPlanSheetName + "\n\n" +
+      "🎯 重要な発見:\n" +
+      "• 総合スコア: " + comprehensiveReport.overallScore + "/100\n" +
+      "• 最優先改善項目: " + comprehensiveReport.topPriority + "\n" +
+      "• 成長ポテンシャル: " + comprehensiveReport.growthPotential + "\n\n" +
+      "詳細は各シートをご確認ください。",
+      ui.ButtonSet.OK
+    );
+    
+  } catch (error) {
+    Logger.log("包括的分析エラー: " + error.toString());
+    var dashboard = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("📊 YouTube チャンネル分析");
+    if (dashboard) {
+      dashboard.getRange("A25").setValue("分析中にエラーが発生しました: " + error.toString());
+    }
+    
+    SpreadsheetApp.getUi().alert(
+      "分析エラー",
+      "包括的分析中にエラーが発生しました:\n\n" + error.toString() + "\n\nAPIキーやネットワーク接続を確認してください。",
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * 既存の高度分析機能を統合実行
+ */
+function executeAdvancedAnalysisModules(channelInput, apiKey) {
+  try {
+    // 4_channelCheck.gsの高度機能を活用
+    var results = {
+      videoPerformance: null,
+      audienceAnalysis: null,
+      engagementAnalysis: null,
+      trafficSources: null,
+      hasOAuthAccess: false
+    };
+    
+    // OAuth認証状態確認
+    try {
+      if (typeof getYouTubeOAuthService === 'function') {
+        var service = getYouTubeOAuthService();
+        results.hasOAuthAccess = service.hasAccess();
+      }
+    } catch (e) {
+      Logger.log("OAuth確認エラー: " + e.toString());
+    }
+    
+    // 基本的なチャンネル情報を取得
+    var channelInfo = getChannelByHandleUnified(channelInput, apiKey);
+    if (!channelInfo) {
+      throw new Error("チャンネル情報の取得に失敗");
+    }
+    
+    // 動画リストを取得して分析
+    try {
+      var videoList = getChannelVideos(channelInfo.id, apiKey, 50);
+      results.videoPerformance = analyzeVideoPerformanceData(videoList);
+    } catch (e) {
+      Logger.log("動画分析エラー: " + e.toString());
+      results.videoPerformance = { error: e.toString() };
+    }
+    
+    // OAuth認証が利用可能な場合のみ高度分析実行
+    if (results.hasOAuthAccess) {
+      try {
+        // 既存の分析関数を呼び出し（サイレントモード）
+        if (typeof analyzeAudience === 'function') {
+          results.audienceAnalysis = analyzeAudience(true);
+        }
+        if (typeof analyzeEngagement === 'function') {
+          results.engagementAnalysis = analyzeEngagement(true);
+        }
+        if (typeof analyzeTrafficSources === 'function') {
+          results.trafficSources = analyzeTrafficSources(true);
+        }
+      } catch (e) {
+        Logger.log("OAuth分析エラー: " + e.toString());
+      }
+    }
+    
+    return results;
+  } catch (error) {
+    Logger.log("高度分析モジュールエラー: " + error.toString());
+    return { error: error.toString() };
+  }
+}
+
+/**
+ * 業界基準とのギャップ分析
+ */
+function performGapAnalysis(basicResult, advancedResults) {
+  try {
+    var analysis = {
+      subscriberGap: 0,
+      engagementGap: 0,
+      viewsGap: 0,
+      contentGap: 0,
+      overallGap: 0,
+      benchmarks: {},
+      recommendations: []
+    };
+    
+    // 業界基準（チャンネルサイズ別）
+    var benchmarks = getBenchmarksByChannelSize(basicResult.subscribers);
+    analysis.benchmarks = benchmarks;
+    
+    // ギャップ計算
+    analysis.subscriberGap = calculatePercentageGap(basicResult.subscribers, benchmarks.subscribers);
+    analysis.engagementGap = calculatePercentageGap(basicResult.engagementRate, benchmarks.engagementRate);
+    analysis.viewsGap = calculatePercentageGap(basicResult.avgViews, benchmarks.avgViews);
+    analysis.contentGap = calculatePercentageGap(basicResult.videoCount, benchmarks.videoCount);
+    
+    // 総合ギャップ
+    analysis.overallGap = Math.round((analysis.subscriberGap + analysis.engagementGap + analysis.viewsGap + analysis.contentGap) / 4);
+    
+    // ギャップに基づく推奨事項
+    if (analysis.subscriberGap < -20) {
+      analysis.recommendations.push({
+        category: "登録者増加",
+        priority: "高",
+        action: "コンテンツ戦略の見直しと視聴者ターゲティング強化",
+        gap: analysis.subscriberGap
+      });
+    }
+    
+    if (analysis.engagementGap < -15) {
+      analysis.recommendations.push({
+        category: "エンゲージメント向上", 
+        priority: "高",
+        action: "視聴者とのコミュニケーション活性化と質問・投票機能活用",
+        gap: analysis.engagementGap
+      });
+    }
+    
+    if (analysis.viewsGap < -25) {
+      analysis.recommendations.push({
+        category: "視聴回数向上",
+        priority: "中",
+        action: "サムネイル・タイトル最適化とSEO強化",
+        gap: analysis.viewsGap
+      });
+    }
+    
+    if (analysis.contentGap < -30) {
+      analysis.recommendations.push({
+        category: "コンテンツ量",
+        priority: "中", 
+        action: "投稿頻度の増加と一貫性のあるスケジュール",
+        gap: analysis.contentGap
+      });
+    }
+    
+    return analysis;
+  } catch (error) {
+    Logger.log("ギャップ分析エラー: " + error.toString());
+    return { error: error.toString() };
+  }
+}
+
+/**
+ * チャンネルサイズ別ベンチマーク取得
+ */
+function getBenchmarksByChannelSize(subscribers) {
+  if (subscribers < 1000) {
+    return {
+      subscribers: 1000,
+      engagementRate: 8.0,
+      avgViews: 150,
+      videoCount: 20,
+      category: "新興チャンネル"
+    };
+  } else if (subscribers < 10000) {
+    return {
+      subscribers: 10000,
+      engagementRate: 6.0,
+      avgViews: 800,
+      videoCount: 50,
+      category: "成長チャンネル"
+    };
+  } else if (subscribers < 100000) {
+    return {
+      subscribers: 100000,
+      engagementRate: 4.5,
+      avgViews: 5000,
+      videoCount: 100,
+      category: "中規模チャンネル"
+    };
+  } else if (subscribers < 1000000) {
+    return {
+      subscribers: 1000000,
+      engagementRate: 3.5,
+      avgViews: 50000,
+      videoCount: 200,
+      category: "大規模チャンネル"
+    };
+  } else {
+    return {
+      subscribers: 5000000,
+      engagementRate: 2.8,
+      avgViews: 200000,
+      videoCount: 500,
+      category: "トップチャンネル"
+    };
+  }
+}
+
+/**
+ * パーセンテージギャップ計算
+ */
+function calculatePercentageGap(current, benchmark) {
+  if (benchmark === 0) return 0;
+  return Math.round(((current - benchmark) / benchmark) * 100);
+}
+
+/**
+ * 競合比較分析
+ */
+function performCompetitorAnalysis(basicResult) {
+  try {
+    var analysis = {
+      competitorLevel: "",
+      marketPosition: "",
+      growthPotential: "",
+      competitiveAdvantages: [],
+      improvements: []
+    };
+    
+    // 市場ポジション判定
+    if (basicResult.subscribers < 10000) {
+      analysis.competitorLevel = "新興・小規模";
+      analysis.marketPosition = "ニッチ市場での成長段階";
+      analysis.growthPotential = "高い（適切な戦略で急成長可能）";
+    } else if (basicResult.subscribers < 100000) {
+      analysis.competitorLevel = "中小規模";
+      analysis.marketPosition = "地域・特定分野での認知度構築段階";
+      analysis.growthPotential = "中程度（一貫した成長戦略が重要）";
+    } else if (basicResult.subscribers < 1000000) {
+      analysis.competitorLevel = "中規模";
+      analysis.marketPosition = "業界内での地位確立段階";
+      analysis.growthPotential = "安定（差別化と品質向上が鍵）";
+    } else {
+      analysis.competitorLevel = "大規模";
+      analysis.marketPosition = "業界リーダー・影響力者";
+      analysis.growthPotential = "維持重視（新規開拓と多角化）";
+    }
+    
+    // 競合優位性分析
+    if (basicResult.engagementRate > 5.0) {
+      analysis.competitiveAdvantages.push("高いエンゲージメント率");
+    }
+    if (basicResult.subscriberRate > 0.01) {
+      analysis.competitiveAdvantages.push("効率的な登録者獲得");
+    }
+    if (basicResult.videoCount > 100) {
+      analysis.competitiveAdvantages.push("豊富なコンテンツライブラリ");
+    }
+    
+    // 改善が必要な領域
+    if (basicResult.engagementRate < 2.0) {
+      analysis.improvements.push("エンゲージメント率向上が急務");
+    }
+    if (basicResult.avgViews < basicResult.subscribers * 0.1) {
+      analysis.improvements.push("視聴率の改善が必要");
+    }
+    if (basicResult.videoCount < 20) {
+      analysis.improvements.push("コンテンツ量の増加が必要");
+    }
+    
+    return analysis;
+  } catch (error) {
+    Logger.log("競合分析エラー: " + error.toString());
+    return { error: error.toString() };
+  }
+}
+
+/**
+ * 強化されたAI改善提案生成
+ */
+function generateEnhancedAIRecommendations(basicResult, gapAnalysis, competitorAnalysis) {
+  try {
+    var recommendations = {
+      immediate: [],    // 即座に実行可能
+      shortTerm: [],    // 1-3ヶ月
+      longTerm: [],     // 3-12ヶ月
+      strategic: []     // 戦略的・長期的
+    };
+    
+    // 即座に実行可能な改善
+    recommendations.immediate.push({
+      title: "メタデータ最適化",
+      description: "タイトル、説明文、タグの一括見直し",
+      impact: "中",
+      effort: "低",
+      kpi: "検索流入+15-30%",
+      action: "上位10動画のSEO最適化"
+    });
+    
+    if (basicResult.engagementRate < 3.0) {
+      recommendations.immediate.push({
+        title: "エンゲージメント促進",
+        description: "CTA（行動喚起）の強化と視聴者参加企画",
+        impact: "高",
+        effort: "低",
+        kpi: "エンゲージメント率+50%",
+        action: "動画終了時の具体的なアクション要請"
+      });
+    }
+    
+    // 短期的改善（1-3ヶ月）
+    if (gapAnalysis.contentGap < -20) {
+      recommendations.shortTerm.push({
+        title: "コンテンツ制作スケジュール確立",
+        description: "一貫した投稿スケジュールと品質基準の設定",
+        impact: "高",
+        effort: "中",
+        kpi: "動画数+100%, 視聴維持率+20%",
+        action: "週2-3本の定期投稿体制構築"
+      });
+    }
+    
+    if (basicResult.subscribers < 10000) {
+      recommendations.shortTerm.push({
+        title: "コミュニティ構築",
+        description: "視聴者との双方向コミュニケーション強化",
+        impact: "高",
+        effort: "中",
+        kpi: "登録率+200%, コメント数+150%",
+        action: "ライブ配信とQ&Aセッションの定期開催"
+      });
+    }
+    
+    // 長期的改善（3-12ヶ月）
+    recommendations.longTerm.push({
+      title: "ブランディング強化",
+      description: "一貫したビジュアルアイデンティティとメッセージング",
+      impact: "高",
+      effort: "高",
+      kpi: "ブランド認知度+300%, 直接流入+100%",
+      action: "チャンネルアート、サムネイル、ロゴの統一"
+    });
+    
+    if (competitorAnalysis.marketPosition.includes("成長")) {
+      recommendations.longTerm.push({
+        title: "市場拡大戦略",
+        description: "新しい視聴者層の開拓と多角化",
+        impact: "高",
+        effort: "高", 
+        kpi: "新規視聴者+500%, 総視聴時間+300%",
+        action: "関連分野への進出とコラボレーション"
+      });
+    }
+    
+    // 戦略的改善
+    recommendations.strategic.push({
+      title: "データドリブン運営",
+      description: "Analytics活用による科学的チャンネル成長",
+      impact: "最高",
+      effort: "中",
+      kpi: "全指標の継続的改善",
+      action: "月次分析レポートと改善PDCAサイクル確立"
+    });
+    
+    if (basicResult.subscribers > 50000) {
+      recommendations.strategic.push({
+        title: "収益化最適化",
+        description: "多角的収益源の開発と最適化",
+        impact: "最高",
+        effort: "高",
+        kpi: "収益性+200%, 持続可能性向上",
+        action: "グッズ、メンバーシップ、スポンサーシップ戦略"
+      });
+    }
+    
+    return recommendations;
+  } catch (error) {
+    Logger.log("AI推奨事項生成エラー: " + error.toString());
+    return { error: error.toString() };
+  }
+}
+
+/**
+ * 包括的分析レポート作成
+ */
+function createComprehensiveAnalysisReport(basicResult, advancedResults, gapAnalysis, competitorAnalysis, aiRecommendations) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var timestamp = new Date();
+    var channelName = basicResult.channelName.substring(0, 15).replace(/[/\\?*\[\]]/g, "");
+    
+    // 1. 分析サマリーシート作成
+    var summarySheetName = "📊 分析サマリー_" + channelName;
+    var summarySheet = createOrReplaceSheet(ss, summarySheetName);
+    
+    // サマリーシートのコンテンツ
+    createAnalysisSummarySheet(summarySheet, basicResult, gapAnalysis, competitorAnalysis, timestamp);
+    
+    // 2. ギャップ分析詳細シート作成
+    var gapSheetName = "📋 ギャップ分析_" + channelName;
+    var gapSheet = createOrReplaceSheet(ss, gapSheetName);
+    
+    createGapAnalysisSheet(gapSheet, basicResult, gapAnalysis, timestamp);
+    
+    // 3. アクションプランシート作成
+    var actionSheetName = "🎯 アクションプラン_" + channelName;
+    var actionSheet = createOrReplaceSheet(ss, actionSheetName);
+    
+    createActionPlanSheet(actionSheet, aiRecommendations, gapAnalysis, timestamp);
+    
+    // 4. 総合評価計算
+    var overallScore = calculateOverallScore(basicResult, gapAnalysis, competitorAnalysis);
+    var topPriority = determineTopPriority(gapAnalysis, aiRecommendations);
+    var growthPotential = competitorAnalysis.growthPotential || "中程度";
+    
+    return {
+      summarySheetName: summarySheetName,
+      gapAnalysisSheetName: gapSheetName,
+      actionPlanSheetName: actionSheetName,
+      overallScore: overallScore,
+      topPriority: topPriority,
+      growthPotential: growthPotential,
+      timestamp: timestamp
+    };
+    
+  } catch (error) {
+    Logger.log("包括的レポート作成エラー: " + error.toString());
+    return { error: error.toString() };
+  }
+}
+
+/**
+ * シートを作成または置換
+ */
+function createOrReplaceSheet(ss, sheetName) {
+  var existingSheet = ss.getSheetByName(sheetName);
+  if (existingSheet) {
+    ss.deleteSheet(existingSheet);
+  }
+  return ss.insertSheet(sheetName);
+}
+
+/**
+ * 分析サマリーシート作成
+ */
+function createAnalysisSummarySheet(sheet, basicResult, gapAnalysis, competitorAnalysis, timestamp) {
+  // ヘッダー
+  sheet.getRange("A1:H1").merge();
+  sheet.getRange("A1").setValue("📊 YouTube チャンネル包括分析レポート")
+    .setFontSize(18).setFontWeight("bold")
+    .setBackground("#1a73e8").setFontColor("white")
+    .setHorizontalAlignment("center");
+    
+  // 基本情報セクション
+  sheet.getRange("A3").setValue("📋 基本チャンネル情報").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  
+  var basicInfo = [
+    ["チャンネル名", basicResult.channelName],
+    ["分析日時", timestamp.toLocaleString()],
+    ["登録者数", basicResult.subscribers.toLocaleString() + " 人"],
+    ["総視聴回数", basicResult.totalViews.toLocaleString() + " 回"],
+    ["動画数", basicResult.videoCount.toLocaleString() + " 本"],
+    ["平均視聴回数", basicResult.avgViews.toLocaleString() + " 回/動画"],
+    ["エンゲージメント率", basicResult.engagementRate.toFixed(2) + "%"],
+    ["チャンネル登録率", basicResult.subscriberRate.toFixed(4) + "%"]
+  ];
+  
+  for (var i = 0; i < basicInfo.length; i++) {
+    sheet.getRange(4 + i, 1).setValue(basicInfo[i][0] + ":");
+    sheet.getRange(4 + i, 3).setValue(basicInfo[i][1]);
+  }
+  
+  // パフォーマンス評価セクション
+  sheet.getRange("E3").setValue("🏆 パフォーマンス評価").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  
+  var performanceData = [
+    ["総合スコア", basicResult.score + "/100 (" + basicResult.grade + ")"],
+    ["市場ポジション", competitorAnalysis.marketPosition],
+    ["成長ポテンシャル", competitorAnalysis.growthPotential],
+    ["競合レベル", competitorAnalysis.competitorLevel],
+    ["業界ギャップ", gapAnalysis.overallGap + "%"],
+    ["ベンチマーク", gapAnalysis.benchmarks.category],
+    ["改善優先度", gapAnalysis.recommendations.length > 0 ? gapAnalysis.recommendations[0].priority : "低"]
+  ];
+  
+  for (var i = 0; i < performanceData.length; i++) {
+    sheet.getRange(4 + i, 5).setValue(performanceData[i][0] + ":");
+    sheet.getRange(4 + i, 7).setValue(performanceData[i][1]);
+  }
+  
+  // ギャップ分析サマリー
+  sheet.getRange("A13").setValue("📊 主要指標ギャップ分析").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  
+  var gapData = [
+    ["指標", "現在値", "業界基準", "ギャップ", "評価"],
+    ["登録者数", basicResult.subscribers.toLocaleString(), gapAnalysis.benchmarks.subscribers.toLocaleString(), gapAnalysis.subscriberGap + "%", getGapEvaluation(gapAnalysis.subscriberGap)],
+    ["エンゲージメント率", basicResult.engagementRate.toFixed(2) + "%", gapAnalysis.benchmarks.engagementRate + "%", gapAnalysis.engagementGap + "%", getGapEvaluation(gapAnalysis.engagementGap)],
+    ["平均視聴回数", basicResult.avgViews.toLocaleString(), gapAnalysis.benchmarks.avgViews.toLocaleString(), gapAnalysis.viewsGap + "%", getGapEvaluation(gapAnalysis.viewsGap)],
+    ["動画数", basicResult.videoCount.toLocaleString(), gapAnalysis.benchmarks.videoCount.toLocaleString(), gapAnalysis.contentGap + "%", getGapEvaluation(gapAnalysis.contentGap)]
+  ];
+  
+  for (var i = 0; i < gapData.length; i++) {
+    for (var j = 0; j < gapData[i].length; j++) {
+      var cell = sheet.getRange(14 + i, 1 + j);
+      cell.setValue(gapData[i][j]);
+      if (i === 0) {
+        cell.setFontWeight("bold").setBackground("#e8f0fe");
+      } else if (j === 4) {
+        // 評価列に色付け
+        var evaluation = gapData[i][j];
+        if (evaluation === "優秀") cell.setBackground("#d4edda").setFontColor("#155724");
+        else if (evaluation === "良好") cell.setBackground("#fff3cd").setFontColor("#856404");
+        else if (evaluation === "要改善") cell.setBackground("#f8d7da").setFontColor("#721c24");
+      }
+    }
+  }
+  
+  // 競合優位性・改善点
+  sheet.getRange("A20").setValue("💪 競合優位性").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  sheet.getRange("E20").setValue("⚠️ 改善が必要な領域").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  
+  // 優位性の表示
+  for (var i = 0; i < Math.min(competitorAnalysis.competitiveAdvantages.length, 5); i++) {
+    sheet.getRange(21 + i, 1).setValue("✅ " + competitorAnalysis.competitiveAdvantages[i]);
+  }
+  
+  // 改善点の表示
+  for (var i = 0; i < Math.min(competitorAnalysis.improvements.length, 5); i++) {
+    sheet.getRange(21 + i, 5).setValue("🔸 " + competitorAnalysis.improvements[i]);
+  }
+  
+  // フォーマット設定
+  formatAnalysisSummarySheet(sheet);
+}
+
+/**
+ * ギャップ評価を文字列で返す
+ */
+function getGapEvaluation(gap) {
+  if (gap >= 20) return "優秀";
+  if (gap >= 0) return "良好";
+  if (gap >= -20) return "平均";
+  return "要改善";
+}
+
+/**
+ * ギャップ分析シート作成
+ */
+function createGapAnalysisSheet(sheet, basicResult, gapAnalysis, timestamp) {
+  // ヘッダー
+  sheet.getRange("A1:F1").merge();
+  sheet.getRange("A1").setValue("📋 詳細ギャップ分析レポート")
+    .setFontSize(18).setFontWeight("bold")
+    .setBackground("#ff9800").setFontColor("white")
+    .setHorizontalAlignment("center");
+    
+  sheet.getRange("A2").setValue("分析日時: " + timestamp.toLocaleString());
+  sheet.getRange("A3").setValue("対象チャンネル: " + basicResult.channelName);
+  
+  // ベンチマーク情報
+  sheet.getRange("A5").setValue("🎯 適用ベンチマーク").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  
+  var benchmarkInfo = [
+    ["カテゴリ", gapAnalysis.benchmarks.category],
+    ["登録者基準", gapAnalysis.benchmarks.subscribers.toLocaleString() + " 人"],
+    ["エンゲージメント基準", gapAnalysis.benchmarks.engagementRate + "%"],
+    ["視聴回数基準", gapAnalysis.benchmarks.avgViews.toLocaleString() + " 回"],
+    ["動画数基準", gapAnalysis.benchmarks.videoCount + " 本"]
+  ];
+  
+  for (var i = 0; i < benchmarkInfo.length; i++) {
+    sheet.getRange(6 + i, 1).setValue(benchmarkInfo[i][0] + ":");
+    sheet.getRange(6 + i, 3).setValue(benchmarkInfo[i][1]);
+  }
+  
+  // 詳細ギャップ分析
+  sheet.getRange("A12").setValue("📊 詳細ギャップ分析").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  
+  var detailedGaps = [
+    ["指標", "現在値", "目標値", "差分", "達成率", "優先度", "推奨アクション"],
+    ["登録者数", basicResult.subscribers.toLocaleString(), gapAnalysis.benchmarks.subscribers.toLocaleString(), (gapAnalysis.benchmarks.subscribers - basicResult.subscribers).toLocaleString(), Math.min(100, Math.round((basicResult.subscribers / gapAnalysis.benchmarks.subscribers) * 100)) + "%", getPriority(gapAnalysis.subscriberGap), getActionForGap("subscribers", gapAnalysis.subscriberGap)],
+    ["エンゲージメント率", basicResult.engagementRate.toFixed(2) + "%", gapAnalysis.benchmarks.engagementRate + "%", (gapAnalysis.benchmarks.engagementRate - basicResult.engagementRate).toFixed(2) + "%", Math.min(100, Math.round((basicResult.engagementRate / gapAnalysis.benchmarks.engagementRate) * 100)) + "%", getPriority(gapAnalysis.engagementGap), getActionForGap("engagement", gapAnalysis.engagementGap)],
+    ["平均視聴回数", basicResult.avgViews.toLocaleString(), gapAnalysis.benchmarks.avgViews.toLocaleString(), (gapAnalysis.benchmarks.avgViews - basicResult.avgViews).toLocaleString(), Math.min(100, Math.round((basicResult.avgViews / gapAnalysis.benchmarks.avgViews) * 100)) + "%", getPriority(gapAnalysis.viewsGap), getActionForGap("views", gapAnalysis.viewsGap)],
+    ["動画数", basicResult.videoCount.toLocaleString(), gapAnalysis.benchmarks.videoCount.toLocaleString(), (gapAnalysis.benchmarks.videoCount - basicResult.videoCount).toLocaleString(), Math.min(100, Math.round((basicResult.videoCount / gapAnalysis.benchmarks.videoCount) * 100)) + "%", getPriority(gapAnalysis.contentGap), getActionForGap("content", gapAnalysis.contentGap)]
+  ];
+  
+  for (var i = 0; i < detailedGaps.length; i++) {
+    for (var j = 0; j < detailedGaps[i].length; j++) {
+      var cell = sheet.getRange(13 + i, 1 + j);
+      cell.setValue(detailedGaps[i][j]);
+      if (i === 0) {
+        cell.setFontWeight("bold").setBackground("#e8f0fe");
+      } else if (j === 5) {
+        // 優先度列に色付け
+        var priority = detailedGaps[i][j];
+        if (priority === "高") cell.setBackground("#ffebee").setFontColor("#c62828");
+        else if (priority === "中") cell.setBackground("#fff3e0").setFontColor("#f57c00");
+        else cell.setBackground("#e8f5e8").setFontColor("#2e7d32");
+      }
+    }
+  }
+  
+  // 改善提案セクション
+  sheet.getRange("A19").setValue("💡 優先改善提案").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  
+  for (var i = 0; i < Math.min(gapAnalysis.recommendations.length, 5); i++) {
+    var rec = gapAnalysis.recommendations[i];
+    sheet.getRange(20 + i, 1).setValue((i + 1) + ". " + rec.category);
+    sheet.getRange(20 + i, 3).setValue("優先度: " + rec.priority);
+    sheet.getRange(20 + i, 5).setValue(rec.action);
+    
+    // 優先度に応じた色付け
+    var priorityCell = sheet.getRange(20 + i, 3);
+    if (rec.priority === "高") priorityCell.setBackground("#ffebee").setFontColor("#c62828");
+    else if (rec.priority === "中") priorityCell.setBackground("#fff3e0").setFontColor("#f57c00");
+    else priorityCell.setBackground("#e8f5e8").setFontColor("#2e7d32");
+  }
+  
+  // フォーマット設定
+  formatGapAnalysisSheet(sheet);
+}
+
+/**
+ * 優先度を返す
+ */
+function getPriority(gap) {
+  if (gap < -30) return "高";
+  if (gap < -10) return "中";
+  return "低";
+}
+
+/**
+ * ギャップに基づくアクション推奨
+ */
+function getActionForGap(category, gap) {
+  if (gap >= 0) return "現状維持・さらなる向上";
+  
+  switch (category) {
+    case "subscribers":
+      return gap < -30 ? "コンテンツ戦略全面見直し" : "ターゲティング最適化";
+    case "engagement":
+      return gap < -20 ? "コミュニティ構築強化" : "インタラクション改善";
+    case "views":
+      return gap < -25 ? "SEO・サムネイル最適化" : "推奨アルゴリズム対策";
+    case "content":
+      return gap < -30 ? "投稿頻度大幅増加" : "一貫性のあるスケジュール";
+    default:
+      return "データ分析による最適化";
+  }
+}
+
+/**
+ * アクションプランシート作成
+ */
+function createActionPlanSheet(sheet, aiRecommendations, gapAnalysis, timestamp) {
+  // ヘッダー
+  sheet.getRange("A1:H1").merge();
+  sheet.getRange("A1").setValue("🎯 チャンネル成長アクションプラン")
+    .setFontSize(18).setFontWeight("bold")
+    .setBackground("#4caf50").setFontColor("white")
+    .setHorizontalAlignment("center");
+    
+  sheet.getRange("A2").setValue("作成日時: " + timestamp.toLocaleString());
+  
+  // 即座に実行可能な施策
+  var currentRow = 4;
+  currentRow = createRecommendationSection(sheet, "⚡ 即座に実行可能（今すぐ～1週間）", aiRecommendations.immediate, currentRow);
+  
+  // 短期施策
+  currentRow += 2;
+  currentRow = createRecommendationSection(sheet, "📈 短期施策（1-3ヶ月）", aiRecommendations.shortTerm, currentRow);
+  
+  // 長期施策
+  currentRow += 2;
+  currentRow = createRecommendationSection(sheet, "🚀 長期施策（3-12ヶ月）", aiRecommendations.longTerm, currentRow);
+  
+  // 戦略的施策
+  currentRow += 2;
+  currentRow = createRecommendationSection(sheet, "🎯 戦略的施策（継続的）", aiRecommendations.strategic, currentRow);
+  
+  // 優先度マトリックス
+  currentRow += 3;
+  createPriorityMatrix(sheet, aiRecommendations, currentRow);
+  
+  // フォーマット設定
+  formatActionPlanSheet(sheet);
+}
+
+/**
+ * 推奨事項セクション作成
+ */
+function createRecommendationSection(sheet, title, recommendations, startRow) {
+  sheet.getRange(startRow, 1).setValue(title).setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  
+  if (recommendations.length === 0) {
+    sheet.getRange(startRow + 1, 1).setValue("該当する推奨事項がありません。");
+    return startRow + 1;
+  }
+  
+  // ヘッダー
+  var headers = ["施策", "説明", "影響度", "工数", "KPI目標", "具体的アクション"];
+  for (var j = 0; j < headers.length; j++) {
+    sheet.getRange(startRow + 1, 1 + j).setValue(headers[j]).setFontWeight("bold").setBackground("#e8f0fe");
+  }
+  
+  // 推奨事項データ
+  for (var i = 0; i < recommendations.length; i++) {
+    var rec = recommendations[i];
+    var row = startRow + 2 + i;
+    
+    sheet.getRange(row, 1).setValue(rec.title);
+    sheet.getRange(row, 2).setValue(rec.description);
+    sheet.getRange(row, 3).setValue(rec.impact);
+    sheet.getRange(row, 4).setValue(rec.effort);
+    sheet.getRange(row, 5).setValue(rec.kpi);
+    sheet.getRange(row, 6).setValue(rec.action);
+    
+    // 影響度による色付け
+    var impactCell = sheet.getRange(row, 3);
+    if (rec.impact === "最高" || rec.impact === "高") impactCell.setBackground("#e8f5e8").setFontColor("#2e7d32");
+    else if (rec.impact === "中") impactCell.setBackground("#fff3e0").setFontColor("#f57c00");
+    else impactCell.setBackground("#fafafa").setFontColor("#757575");
+    
+    // 工数による色付け
+    var effortCell = sheet.getRange(row, 4);
+    if (rec.effort === "低") effortCell.setBackground("#e8f5e8").setFontColor("#2e7d32");
+    else if (rec.effort === "中") effortCell.setBackground("#fff3e0").setFontColor("#f57c00");
+    else effortCell.setBackground("#ffebee").setFontColor("#c62828");
+  }
+  
+  return startRow + 2 + recommendations.length;
+}
+
+/**
+ * 優先度マトリックス作成
+ */
+function createPriorityMatrix(sheet, aiRecommendations, startRow) {
+  sheet.getRange(startRow, 1).setValue("📊 影響度×工数マトリックス（実行優先度参考）").setFontSize(14).setFontWeight("bold").setBackground("#f8f9fa");
+  
+  var matrixData = [
+    ["", "低工数", "中工数", "高工数"],
+    ["高影響", "最優先", "優先", "検討"],
+    ["中影響", "優先", "検討", "後回し"],
+    ["低影響", "検討", "後回し", "不要"]
+  ];
+  
+  for (var i = 0; i < matrixData.length; i++) {
+    for (var j = 0; j < matrixData[i].length; j++) {
+      var cell = sheet.getRange(startRow + 1 + i, 1 + j);
+      cell.setValue(matrixData[i][j]);
+      
+      if (i === 0 || j === 0) {
+        cell.setFontWeight("bold").setBackground("#e8f0fe");
+      } else {
+        // 優先度による色付け
+        var value = matrixData[i][j];
+        if (value === "最優先") cell.setBackground("#c8e6c9").setFontColor("#1b5e20");
+        else if (value === "優先") cell.setBackground("#fff9c4").setFontColor("#f57f17");
+        else if (value === "検討") cell.setBackground("#ffecb3").setFontColor("#ff8f00");
+        else cell.setBackground("#ffcdd2").setFontColor("#c62828");
+      }
+    }
+  }
+}
+
+/**
+ * ダッシュボードに結果を反映
+ */
+function updateDashboardWithResults(dashboard, basicResult) {
+  try {
+    dashboard.getRange("B15").setValue(basicResult.channelName);
+    dashboard.getRange("B16").setValue(basicResult.subscribers.toLocaleString() + " 人");
+    dashboard.getRange("B17").setValue(basicResult.totalViews.toLocaleString() + " 回");
+    dashboard.getRange("B18").setValue(basicResult.videoCount.toLocaleString() + " 本");
+    dashboard.getRange("B20").setValue(basicResult.avgViews.toLocaleString() + " 回/動画");
+    dashboard.getRange("B21").setValue(basicResult.engagementRate.toFixed(2) + "%");
+    dashboard.getRange("B22").setValue(basicResult.score + "/100 (" + basicResult.grade + ")");
+    dashboard.getRange("B23").setValue(basicResult.subscriberRate.toFixed(4) + "%");
+  } catch (error) {
+    Logger.log("ダッシュボード基本更新エラー: " + error.toString());
+  }
+}
+
+/**
+ * ダッシュボードに包括的結果を反映
+ */
+function updateDashboardWithComprehensiveResults(dashboard, comprehensiveReport) {
+  try {
+    var improvedSuggestions = 
+      "🎯 包括的分析完了！\n\n" +
+      "📊 作成レポート:\n" +
+      "• " + comprehensiveReport.summarySheetName + "\n" +
+      "• " + comprehensiveReport.gapAnalysisSheetName + "\n" +
+      "• " + comprehensiveReport.actionPlanSheetName + "\n\n" +
+      "🔍 重要指標:\n" +
+      "• 総合スコア: " + comprehensiveReport.overallScore + "/100\n" +
+      "• 最優先改善: " + comprehensiveReport.topPriority + "\n" +
+      "• 成長ポテンシャル: " + comprehensiveReport.growthPotential + "\n\n" +
+      "📋 次のステップ:\n" +
+      "1. アクションプランシートで具体的施策を確認\n" +
+      "2. 最優先項目から実行開始\n" +
+      "3. 月次で進捗を測定・分析";
+    
+    dashboard.getRange("A25").setValue(improvedSuggestions);
+  } catch (error) {
+    Logger.log("ダッシュボード包括更新エラー: " + error.toString());
+  }
+}
+
+/**
+ * 総合スコア計算
+ */
+function calculateOverallScore(basicResult, gapAnalysis, competitorAnalysis) {
+  try {
+    var score = 0;
+    
+    // 基本スコア（既存の算出）
+    score += basicResult.score * 0.4; // 40%
+    
+    // ギャップ分析スコア（30%）
+    var gapScore = 0;
+    if (gapAnalysis.overallGap >= 0) gapScore = 100;
+    else if (gapAnalysis.overallGap >= -20) gapScore = 80;
+    else if (gapAnalysis.overallGap >= -40) gapScore = 60;
+    else gapScore = 40;
+    score += gapScore * 0.3;
+    
+    // 競合分析スコア（30%）
+    var competitorScore = 0;
+    if (competitorAnalysis.competitiveAdvantages.length >= 3) competitorScore = 90;
+    else if (competitorAnalysis.competitiveAdvantages.length >= 2) competitorScore = 75;
+    else if (competitorAnalysis.competitiveAdvantages.length >= 1) competitorScore = 60;
+    else competitorScore = 45;
+    
+    if (competitorAnalysis.improvements.length <= 1) competitorScore += 10;
+    else if (competitorAnalysis.improvements.length >= 4) competitorScore -= 15;
+    
+    score += competitorScore * 0.3;
+    
+    return Math.round(score);
+  } catch (error) {
+    Logger.log("総合スコア計算エラー: " + error.toString());
+    return basicResult.score || 50;
+  }
+}
+
+/**
+ * 最優先項目決定
+ */
+function determineTopPriority(gapAnalysis, aiRecommendations) {
+  try {
+    // ギャップ分析から最大のギャップを特定
+    var gaps = [
+      { name: "登録者数", gap: gapAnalysis.subscriberGap },
+      { name: "エンゲージメント率", gap: gapAnalysis.engagementGap },
+      { name: "視聴回数", gap: gapAnalysis.viewsGap },
+      { name: "コンテンツ量", gap: gapAnalysis.contentGap }
+    ];
+    
+    gaps.sort(function(a, b) { return a.gap - b.gap; });
+    
+    var worstGap = gaps[0];
+    
+    // 即座に実行可能な項目があれば優先
+    if (aiRecommendations.immediate.length > 0) {
+      return aiRecommendations.immediate[0].title + "（即座実行可能）";
+    }
+    
+    // そうでなければギャップが最大の項目
+    if (worstGap.gap < -30) {
+      return worstGap.name + "の大幅改善";
+    } else if (worstGap.gap < -15) {
+      return worstGap.name + "の改善";
+    }
+    
+    return "現状維持・継続改善";
+  } catch (error) {
+    Logger.log("最優先項目決定エラー: " + error.toString());
+    return "データ分析による最適化";
+  }
+}
+
+/**
+ * チャンネル動画リスト取得
+ */
+function getChannelVideos(channelId, apiKey, maxResults) {
+  try {
+    maxResults = maxResults || 50;
+    
+    // チャンネルのアップロードプレイリストIDを取得
+    var channelUrl = "https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=" + channelId + "&key=" + apiKey;
+    var channelResponse = UrlFetchApp.fetch(channelUrl);
+    var channelData = JSON.parse(channelResponse.getContentText());
+    
+    if (!channelData.items || channelData.items.length === 0) {
+      throw new Error("チャンネル情報が見つかりません");
+    }
+    
+    var uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+    
+    // プレイリストから動画リストを取得
+    var playlistUrl = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=" + 
+                     uploadsPlaylistId + "&maxResults=" + maxResults + "&key=" + apiKey;
+    var playlistResponse = UrlFetchApp.fetch(playlistUrl);
+    var playlistData = JSON.parse(playlistResponse.getContentText());
+    
+    if (!playlistData.items) {
+      return [];
+    }
+    
+    // 各動画の詳細統計を取得
+    var videoIds = playlistData.items.map(function(item) {
+      return item.snippet.resourceId.videoId;
+    }).join(',');
+    
+    var videosUrl = "https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=" + videoIds + "&key=" + apiKey;
+    var videosResponse = UrlFetchApp.fetch(videosUrl);
+    var videosData = JSON.parse(videosResponse.getContentText());
+    
+    return videosData.items || [];
+  } catch (error) {
+    Logger.log("動画リスト取得エラー: " + error.toString());
+    return [];
+  }
+}
+
+/**
+ * 動画パフォーマンス分析
+ */
+function analyzeVideoPerformanceData(videoList) {
+  try {
+    if (!videoList || videoList.length === 0) {
+      return { error: "分析する動画がありません" };
+    }
+    
+    var analysis = {
+      totalVideos: videoList.length,
+      topPerformers: [],
+      averageViews: 0,
+      averageLikes: 0,
+      averageComments: 0,
+      engagementTrends: [],
+      performanceDistribution: {}
+    };
+    
+    var totalViews = 0;
+    var totalLikes = 0;
+    var totalComments = 0;
+    
+    // 各動画の分析
+    var videoPerformance = [];
+    for (var i = 0; i < videoList.length; i++) {
+      var video = videoList[i];
+      var stats = video.statistics;
+      
+      var views = parseInt(stats.viewCount || 0);
+      var likes = parseInt(stats.likeCount || 0);
+      var comments = parseInt(stats.commentCount || 0);
+      
+      totalViews += views;
+      totalLikes += likes;
+      totalComments += comments;
+      
+      var engagementRate = views > 0 ? ((likes + comments) / views * 100) : 0;
+      
+      videoPerformance.push({
+        title: video.snippet.title,
+        views: views,
+        likes: likes,
+        comments: comments,
+        engagementRate: engagementRate,
+        publishedAt: video.snippet.publishedAt
+      });
+    }
+    
+    // 平均値計算
+    analysis.averageViews = Math.round(totalViews / videoList.length);
+    analysis.averageLikes = Math.round(totalLikes / videoList.length);
+    analysis.averageComments = Math.round(totalComments / videoList.length);
+    
+    // トップパフォーマー（視聴回数順）
+    videoPerformance.sort(function(a, b) { return b.views - a.views; });
+    analysis.topPerformers = videoPerformance.slice(0, 5);
+    
+    // パフォーマンス分布
+    var highPerformers = videoPerformance.filter(function(v) { return v.views > analysis.averageViews * 1.5; }).length;
+    var mediumPerformers = videoPerformance.filter(function(v) { return v.views >= analysis.averageViews * 0.5 && v.views <= analysis.averageViews * 1.5; }).length;
+    var lowPerformers = videoPerformance.filter(function(v) { return v.views < analysis.averageViews * 0.5; }).length;
+    
+    analysis.performanceDistribution = {
+      high: highPerformers,
+      medium: mediumPerformers,
+      low: lowPerformers
+    };
+    
+    return analysis;
+  } catch (error) {
+    Logger.log("動画パフォーマンス分析エラー: " + error.toString());
+    return { error: error.toString() };
+  }
+}
+
+/**
+ * 分析サマリーシートフォーマット
+ */
+function formatAnalysisSummarySheet(sheet) {
+  // 列幅設定
+  sheet.setColumnWidth(1, 120);  // ラベル
+  sheet.setColumnWidth(2, 20);   // スペーサー
+  sheet.setColumnWidth(3, 200);  // 値
+  sheet.setColumnWidth(4, 20);   // スペーサー
+  sheet.setColumnWidth(5, 120);  // ラベル
+  sheet.setColumnWidth(6, 20);   // スペーサー
+  sheet.setColumnWidth(7, 200);  // 値
+  sheet.setColumnWidth(8, 50);   // 余白
+  
+  // 行高設定
+  sheet.setRowHeight(1, 40);
+  
+  // 境界線設定
+  sheet.getRange("A4:C11").setBorder(true, true, true, true, true, true);
+  sheet.getRange("E4:G10").setBorder(true, true, true, true, true, true);
+  sheet.getRange("A14:E18").setBorder(true, true, true, true, true, true);
+}
+
+/**
+ * ギャップ分析シートフォーマット
+ */
+function formatGapAnalysisSheet(sheet) {
+  // 列幅設定
+  sheet.setColumnWidth(1, 100);  // 指標
+  sheet.setColumnWidth(2, 20);   // スペーサー
+  sheet.setColumnWidth(3, 150);  // 値
+  sheet.setColumnWidth(4, 100);  // 差分
+  sheet.setColumnWidth(5, 80);   // 達成率
+  sheet.setColumnWidth(6, 60);   // 優先度
+  sheet.setColumnWidth(7, 300);  // アクション
+  
+  // 行高設定
+  sheet.setRowHeight(1, 40);
+  
+  // 境界線設定
+  sheet.getRange("A6:C10").setBorder(true, true, true, true, true, true);
+  sheet.getRange("A13:G17").setBorder(true, true, true, true, true, true);
+}
+
+/**
+ * アクションプランシートフォーマット
+ */
+function formatActionPlanSheet(sheet) {
+  // 列幅設定
+  sheet.setColumnWidth(1, 150);  // 施策
+  sheet.setColumnWidth(2, 200);  // 説明
+  sheet.setColumnWidth(3, 80);   // 影響度
+  sheet.setColumnWidth(4, 80);   // 工数
+  sheet.setColumnWidth(5, 150);  // KPI
+  sheet.setColumnWidth(6, 250);  // アクション
+  sheet.setColumnWidth(7, 50);   // 余白
+  sheet.setColumnWidth(8, 50);   // 余白
+  
+  // 行高設定
+  sheet.setRowHeight(1, 40);
+}
+
+/**
+ * メニューに包括的分析を追加
+ */
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  
+  // メインメニュー
+  var menu = ui.createMenu("YouTube ツール");
+  menu.addItem("🏠 統合ダッシュボード", "createOrShowMainDashboard");
+  menu.addSeparator();
+  menu.addItem("① API設定・テスト", "setApiKey");
+  menu.addItem("② チャンネル情報取得", "processHandles");
+  menu.addItem("③ ベンチマークレポート作成", "createBenchmarkReport");
+  menu.addSeparator();
+  menu.addItem("🚀 包括的チャンネル分析", "executeComprehensiveAnalysis");
+  menu.addItem("📊 個別チャンネル分析", "executeChannelAnalysis");
+  menu.addItem("🔍 ベンチマーク分析", "showBenchmarkDashboard");
+  menu.addSeparator();
+  
+  // 既存の4_channelCheck.gs機能も統合
+  if (typeof generateCompleteReport === 'function') {
+    menu.addItem("🎯 ワンクリック完全分析", "generateCompleteReport");
+    menu.addSubMenu(
+      ui.createMenu("📈 個別分析モジュール")
+        .addItem("📊 動画別パフォーマンス分析", "analyzeVideoPerformance")
+        .addItem("👥 視聴者層分析", "analyzeAudience") 
+        .addItem("❤️ エンゲージメント分析", "analyzeEngagement")
+        .addItem("🔀 トラフィックソース分析", "analyzeTrafficSources")
+        .addItem("🤖 AI改善提案", "generateAIRecommendations")
+    );
+    menu.addSeparator();
+  }
+  
+  menu.addItem("シートテンプレート作成", "setupBasicSheet");
+  menu.addItem("使い方ガイドを表示", "showHelpSheet");
+  menu.addSeparator();
+  menu.addItem("🔧 ダッシュボード再作成", "recreateDashboard");
+  menu.addItem("🧪 入力検証テスト", "testInputValidation");
+  menu.addToUi();
+  
+  // 統合ダッシュボードを作成または表示
+  createOrShowMainDashboard();
+}
+
+/**
+ * ダッシュボード再作成
+ */
+function recreateDashboard() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var dashboard = ss.getSheetByName("📊 YouTube チャンネル分析");
+    
+    if (dashboard) {
+      ss.deleteSheet(dashboard);
+    }
+    
+    createUnifiedDashboard();
+    
+    SpreadsheetApp.getUi().alert(
+      "再作成完了",
+      "統合ダッシュボードを再作成しました。",
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  } catch (error) {
+    Logger.log("ダッシュボード再作成エラー: " + error.toString());
+    SpreadsheetApp.getUi().alert(
+      "エラー",
+      "ダッシュボード再作成中にエラーが発生しました: " + error.toString(),
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * 入力検証テスト
+ */
+function testInputValidation() {
+  var testInputs = [
+    "@YouTube",
+    "https://www.youtube.com/@YouTube",
+    "UC-9-kyTW8ZkZNDHQJ6FgpwQ",
+    "https://www.youtube.com/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ",
+    "invalid_input"
+  ];
+  
+  var results = [];
+  for (var i = 0; i < testInputs.length; i++) {
+    var normalized = normalizeChannelInput(testInputs[i]);
+    results.push(testInputs[i] + " → " + (normalized || "無効"));
+  }
+  
+  SpreadsheetApp.getUi().alert(
+    "入力検証テスト結果",
+    "入力検証テスト結果:\n\n" + results.join("\n"),
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
+/**
+ * クイックアクションコマンドの更新（包括的分析対応）
+ */
+function handleQuickAction(command) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var dashboard = ss.getSheetByName("📊 YouTube チャンネル分析");
+    
+    if (!dashboard) return;
+    
+    command = command.toString().toLowerCase().trim();
+    
+    switch (command) {
+      case "分析":
+        executeChannelAnalysis();
+        break;
+      case "包括分析":
+      case "包括的分析":
+      case "完全分析":
+        executeComprehensiveAnalysis();
+        break;
+      case "api":
+        setApiKey();
+        break;
+      case "レポート":
+        createBenchmarkReport();
+        break;
+      case "更新":
+        updateDashboardDisplay();
+        SpreadsheetApp.getUi().alert("ダッシュボードを更新しました");
+        break;
+      default:
+        SpreadsheetApp.getUi().alert(
+          "利用可能なコマンド",
+          "利用可能なコマンド:\n\n• 分析: 基本チャンネル分析\n• 包括分析: 包括的チャンネル分析\n• API: API設定\n• レポート: ベンチマークレポート\n• 更新: ダッシュボード更新",
+          SpreadsheetApp.getUi().ButtonSet.OK
+        );
+    }
+    
+    // コマンド実行後、セルをクリア
+    dashboard.getRange("B9").setValue("ここに「分析」と入力してEnter");
+    dashboard.getRange("B9").setBackground("#fff0f0");
+    
+  } catch (error) {
+    Logger.log("クイックアクション実行エラー: " + error.toString());
+    SpreadsheetApp.getUi().alert(
+      "実行エラー",
+      "コマンド実行中にエラーが発生しました: " + error.toString(),
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
