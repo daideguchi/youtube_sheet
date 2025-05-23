@@ -3,7 +3,13 @@
 *.md
 Makefile
 auto-commit-rules.sh
+auto-clasp-sync.sh
 node_modules/
+node_modules/**
+**/node_modules/**
+node_modules_temp/
+node_modules_temp/**
+**/node_modules_temp/**
 __tests__/
 .git/
 .vscode/
@@ -14,4 +20,5 @@ package*.json
 test-setup.js
 benchmark-functions.js
 .cursorindexingignore
-.gitignore 
+.gitignore
+.clasp.json 
