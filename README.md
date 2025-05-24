@@ -45,9 +45,25 @@ youtube-sheet-gas/
 ├── .clasp.json             # Google Apps Script設定
 ├── appsscript.json         # GASマニフェスト
 ├── __tests__/              # テストファイル
-├── .cursor/rules/          # 開発ルール
+├── .cursor/rules/          # Cursor AI開発ルール
+├── ai-tools/               # AI開発支援ツール (🤖 NEW!)
+│   ├── global-system/      # グローバルAI切り替えシステム
+│   ├── project-config/     # Claude Code設定
+│   ├── workflows/          # AIワークフロー
+│   └── docs/              # AI関連ドキュメント
 └── @todo.md               # タスク管理
 ```
+
+## 🤖 AI 開発支援
+
+このプロジェクトでは **Cursor AI** と **Claude Code** による AI 支援開発が可能です：
+
+### AI 使い分け
+
+- **🎯 Cursor AI**: 日常的なコーディング（軽量・高速）
+- **🔮 Claude Code**: 大規模ファイル分析・リファクタリング
+
+📚 **詳細**: [ai-tools/README.md](ai-tools/README.md)
 
 ## 🛠️ 開発環境
 

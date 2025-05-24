@@ -51,3 +51,11 @@ Thumbs.db
 *.key
 secrets.json
 *.bak*
+
+# SpecStory - 機密情報を含む可能性があるため除外
+.specstory/
+
+# AI Tools - 実行時生成ファイル
+.claude-session
+.claude-history
+claude-debug.log
