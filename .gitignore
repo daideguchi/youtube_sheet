@@ -7,10 +7,10 @@
 node_modules/
 package.json
 package-lock.json
-test-setup.js
-benchmark-functions.js
+build/test-setup.js
+build/benchmark-functions.js
 __tests__/
-.eslintrc.json
+config/.eslintrc.json
 .vscode/
 
 # システムファイル

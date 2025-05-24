@@ -56,6 +56,20 @@
   - [x] Cursor IDE 設定テンプレート（cursor-settings-template.json）
   - [x] インストールスクリプトの更新
   - [x] 包括的な使用ガイド（AUTO-REFRESH-GUIDE.md）
+- [x] AI 関連ファイルの整理・構造化
+  - [x] ai-tools/ ディレクトリの作成と整理
+  - [x] グローバルシステムとプロジェクト設定の分離
+  - [x] 重複ファイルの削除（setup-claude-code.sh）
+  - [x] 構造化されたディレクトリ配置
+  - [x] README.md とドキュメントの整備
+  - [x] .gitignore の適切な更新
+- [x] プロジェクト全体のディレクトリ整理・最適化
+  - [x] 設定ファイルの config/ ディレクトリへの整理
+  - [x] スクリプトファイルの scripts/ ディレクトリへの整理
+  - [x] ビルド・テストファイルの build/ ディレクトリへの整理
+  - [x] 参照パスの修正（package.json, .vscode/settings.json）
+  - [x] README.md のファイル構成図を視覚的に改善
+  - [x] ai-tools/README.md の詳細化・実用化
 
 ## 課題・ブロッカー
 
