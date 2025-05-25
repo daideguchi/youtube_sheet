@@ -1480,22 +1480,7 @@ function runChannelAnalysis(silentMode = false) {
           Utilities.sleep(1000);
           closeProgressDialog();
 
-          // 自動で閉じるモーダルを表示
-          const htmlOutput = HtmlService.createHtmlOutput(`
-            <div style="text-align: center; padding: 20px;">
-              <h3 style="color: #1a73e8;">分析完了</h3>
-              <p>チャンネル分析が完了しました。</p>
-              <p>詳細な分析を行うには「個別分析モジュール」から各分析モジュールを実行してください。</p>
-              <p style="color: #666; font-size: 12px; margin-top: 20px;">このウィンドウは3秒後に自動的に閉じます...</p>
-            </div>
-            <script>
-              setTimeout(function() {
-                google.script.host.close();
-              }, 3000);
-            </script>
-          `);
-          
-          showModalDialog(ui, htmlOutput, "分析完了", 400, 200);
+          // モーダルを表示しない - 削除
         }
       } catch (e) {
         Logger.log("Analytics APIでエラー発生: " + e.toString());
@@ -3779,6 +3764,9 @@ function analyzeAudience(silentMode = false) {
             .setBackground("#F8F9FA");
           currentRow++;
 
+          // 性別データの開始行を記録
+          const genderDataStartRow = currentRow;
+
           if (genderTotals.MALE > 0) {
             audienceSheet.getRange(`A${currentRow}`).setValue("男性");
             audienceSheet
@@ -3802,6 +3790,27 @@ function analyzeAudience(silentMode = false) {
               .setValue(genderTotals.OTHER.toFixed(1) + "%");
             currentRow++;
           }
+
+          // 性別合計の円グラフを追加
+          const genderChart = audienceSheet
+            .newChart()
+            .setChartType(Charts.ChartType.PIE)
+            .addRange(
+              audienceSheet.getRange(
+                `A${genderDataStartRow}:B${currentRow - 1}`
+              )
+            )
+            .setPosition(currentRow + 1, 1, 0, 0)
+            .setOption("title", "性別分布")
+            .setOption("width", 450)
+            .setOption("height", 300)
+            .setOption("pieSliceText", "percentage")
+            .setOption("legend", { position: "right" })
+            .setOption("colors", ["#4285F4", "#EA4335", "#FBBC04"]) // 男性=青、女性=赤、その他=黄
+            .build();
+
+          audienceSheet.insertChart(genderChart);
+          currentRow += 20; // グラフ用のスペース
         } else {
           // データが無い場合の説明
           currentRow++;
@@ -3869,21 +3878,75 @@ function analyzeAudience(silentMode = false) {
         }
 
       // 年齢・性別データのグラフ
-      const ageGenderChart = audienceSheet
+      // 年齢層別のデータを集計
+      const ageGroupTotals = {};
+      let ageDataStartRow = currentRow;
+      
+      // 年齢層ごとに集計
+      for (let i = 0; i < ageGenderData.rows.length; i++) {
+        const row = ageGenderData.rows[i];
+        const ageGroup = translateAgeGroup(row[0]);
+        const percentage = parseFloat(row[2]) || 0;
+        
+        if (!ageGroupTotals[ageGroup]) {
+          ageGroupTotals[ageGroup] = 0;
+        }
+        ageGroupTotals[ageGroup] += percentage;
+      }
+      
+      // 年齢層別データを表示
+      currentRow++;
+      audienceSheet
+        .getRange(`A${currentRow}:H${currentRow}`)
+        .merge()
+        .setValue("年齢層別分布")
+        .setFontWeight("bold")
+        .setBackground("#E8F0FE")
+        .setHorizontalAlignment("center");
+      currentRow++;
+      
+      audienceSheet
+        .getRange(`A${currentRow}:B${currentRow}`)
+        .setValues([["年齢層", "割合 (%)"]])
+        .setFontWeight("bold")
+        .setBackground("#F8F9FA");
+      currentRow++;
+      
+      ageDataStartRow = currentRow;
+      
+      // 年齢層を順番に並べる
+      const ageOrder = ["13-17歳", "18-24歳", "25-34歳", "35-44歳", "45-54歳", "55-64歳", "65歳以上"];
+      
+      for (const age of ageOrder) {
+        if (ageGroupTotals[age] && ageGroupTotals[age] > 0) {
+          audienceSheet.getRange(`A${currentRow}`).setValue(age);
+          audienceSheet
+            .getRange(`B${currentRow}`)
+            .setValue(ageGroupTotals[age].toFixed(1) + "%");
+          currentRow++;
+        }
+      }
+      
+      // 年齢層別の棒グラフ
+      const ageChart = audienceSheet
         .newChart()
         .setChartType(Charts.ChartType.COLUMN)
         .addRange(
           audienceSheet.getRange(
-            `A${currentRow - ageGenderData.rows.length - 1}:B${currentRow - 1}`
+            `A${ageDataStartRow}:B${currentRow - 1}`
           )
         )
         .setPosition(currentRow + 1, 1, 0, 0)
-        .setOption("title", "年齢・性別分布")
+        .setOption("title", "年齢層別分布")
         .setOption("width", 600)
         .setOption("height", 300)
+        .setOption("legend", { position: "none" })
+        .setOption("colors", ["#4285F4"])
+        .setOption("hAxis", { title: "年齢層" })
+        .setOption("vAxis", { title: "割合 (%)" })
         .build();
 
-      audienceSheet.insertChart(ageGenderChart);
+      audienceSheet.insertChart(ageChart);
       currentRow += 20; // グラフ用のスペース
     } else {
       audienceSheet
@@ -4065,25 +4128,7 @@ function analyzeAudience(silentMode = false) {
       Utilities.sleep(1000);
       closeProgressDialog();
 
-      // 自動で閉じるモーダルを表示
-      const htmlOutput = HtmlService.createHtmlOutput(`
-        <div style="text-align: center; padding: 20px;">
-          <h3 style="color: #1a73e8;">分析完了</h3>
-          <p>視聴者層分析が完了しました。</p>
-          <p style="color: #666; font-size: 12px; margin-top: 10px;">
-            注意：時間帯別データは技術的制限により曜日別データに変更されています。<br>
-            年齢・性別データは、チャンネル所有者でない場合やプライバシー保護のため制限される場合があります。
-          </p>
-          <p style="color: #666; font-size: 12px; margin-top: 20px;">このウィンドウは5秒後に自動的に閉じます...</p>
-        </div>
-        <script>
-          setTimeout(function() {
-            google.script.host.close();
-          }, 5000);
-        </script>
-      `);
-      
-      showModalDialog(ui, htmlOutput, "分析完了", 500, 250);
+      // モーダルを表示しない - 削除
     }
   } catch (e) {
     Logger.log("エラー: " + e.toString());
