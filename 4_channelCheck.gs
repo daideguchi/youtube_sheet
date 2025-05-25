@@ -12,42 +12,36 @@ const AI_FEEDBACK_SHEET_NAME = "AIフィードバック";
 // 分析履歴保管用
 const ANALYSIS_HISTORY_SHEET_NAME = "分析履歴";
 
-// Claude API設定
+// Claude API設定（事前設定済み）
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 
+// 事前設定されたAPIキー（配布用）
+// 実際の配布時にはここにAPIキーを設定してください
+const CLAUDE_API_KEY = 'YOUR_CLAUDE_API_KEY_HERE';
+
 /**
- * Claude APIキーを取得（プロパティサービスから）
+ * Claude APIキーを取得（事前設定済み）
  */
 function getClaudeApiKey() {
-  // まずスクリプトプロパティから取得を試行
-  let apiKey = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
-  
-  // プロパティに設定されていない場合は設定を促す
-  if (!apiKey) {
-    const ui = SpreadsheetApp.getUi();
-    const result = ui.prompt(
-      'Claude APIキー設定',
-      'Claude APIキーを入力してください:\n(このキーは安全に保存され、コードには表示されません)',
-      ui.ButtonSet.OK_CANCEL
-    );
-    
-    if (result.getSelectedButton() === ui.Button.OK) {
-      apiKey = result.getResponseText().trim();
-      if (apiKey) {
-        // プロパティサービスに安全に保存
-        PropertiesService.getScriptProperties().setProperty('CLAUDE_API_KEY', apiKey);
-        ui.alert('設定完了', 'Claude APIキーが安全に保存されました。', ui.ButtonSet.OK);
-      } else {
-        ui.alert('エラー', 'APIキーが入力されませんでした。', ui.ButtonSet.OK);
-        return null;
-      }
-    } else {
-      ui.alert('キャンセル', 'Claude API分析をキャンセルしました。', ui.ButtonSet.OK);
-      return null;
-    }
+  // 事前設定されたAPIキーを使用
+  if (CLAUDE_API_KEY && CLAUDE_API_KEY !== 'YOUR_CLAUDE_API_KEY_HERE') {
+    return CLAUDE_API_KEY;
   }
   
-  return apiKey;
+  // フォールバック: プロパティサービスから取得
+  const apiKey = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
+  if (apiKey) {
+    return apiKey;
+  }
+  
+  // APIキーが設定されていない場合のエラー
+  const ui = SpreadsheetApp.getUi();
+  ui.alert(
+    'システムエラー', 
+    'Claude APIキーが設定されていません。\n管理者にお問い合わせください。', 
+    ui.ButtonSet.OK
+  );
+  return null;
 }
 
 // セル参照（8行目データ行版）
