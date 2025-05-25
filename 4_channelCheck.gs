@@ -265,6 +265,9 @@ function setupImprovedDashboardHeaders(dashboardSheet) {
 
   // 分析概要セクションを追加
   setupAnalysisSummarySection(dashboardSheet);
+  
+  // 各分析の総括セクションを追加
+  setupAnalysisSummariesSection(dashboardSheet);
 
   // 初期フォーカスの設定
   dashboardSheet.getRange("D2").activate();
@@ -406,6 +409,80 @@ function updateOverallAnalysisSummary() {
   } else if (completedCount > 0) {
     dashboardSheet.getRange("A30").setBackground("#FFF3E0").setFontColor("#F57C00");
   }
+}
+
+/**
+ * 各分析の総括セクションを設定
+ */
+function setupAnalysisSummariesSection(dashboardSheet) {
+  // 総括セクションのヘッダー（32行目から開始）
+  dashboardSheet
+    .getRange("A32:I32")
+    .merge()
+    .setValue("分析総括")
+    .setFontSize(14)
+    .setFontWeight("bold")
+    .setBackground("#4285F4")
+    .setFontColor("white")
+    .setHorizontalAlignment("center");
+
+  // 各分析の総括を表示するエリアを準備
+  const summaryHeaders = [
+    ["分析項目", "主要データ", "詳細"]
+  ];
+  
+  dashboardSheet
+    .getRange("A33:C33")
+    .setValues(summaryHeaders)
+    .setFontWeight("bold")
+    .setBackground("#E8F0FE")
+    .setHorizontalAlignment("center");
+
+  // 初期値を設定
+  const summaryItems = [
+    ["動画別分析", "データなし", "分析を実行してください"],
+    ["視聴者分析", "データなし", "分析を実行してください"],
+    ["エンゲージメント分析", "データなし", "分析を実行してください"],
+    ["トラフィック分析", "データなし", "分析を実行してください"],
+    ["コメント分析", "データなし", "分析を実行してください"],
+    ["AI提案", "データなし", "分析を実行してください"]
+  ];
+
+  dashboardSheet
+    .getRange("A34:C39")
+    .setValues(summaryItems);
+    
+  // 列幅の調整
+  dashboardSheet.setColumnWidth(1, 150);
+  dashboardSheet.setColumnWidth(2, 200);
+  dashboardSheet.setColumnWidth(3, 300);
+}
+
+/**
+ * 分析総括を更新
+ */
+function updateAnalysisSummaryData(analysisType, mainData, details) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  
+  if (!dashboardSheet) return;
+
+  // 分析タイプと行番号のマッピング
+  const summaryRowMap = {
+    "動画別分析": 34,
+    "視聴者分析": 35,
+    "エンゲージメント分析": 36,
+    "トラフィック分析": 37,
+    "コメント分析": 38,
+    "AI提案": 39
+  };
+
+  const row = summaryRowMap[analysisType];
+  if (!row) return;
+
+  // データを更新
+  dashboardSheet.getRange(`B${row}`).setValue(mainData);
+  dashboardSheet.getRange(`C${row}`).setValue(details);
 }
 
 /**
@@ -1267,19 +1344,42 @@ function updateAPIStatus() {
  * プログレスバーを表示
  */
 function showProgressDialog(message, percentComplete) {
-  const htmlOutput = HtmlService.createHtmlOutput(
-    `<div style="text-align: center; padding: 30px; min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
-       <h3 style="margin: 0 0 25px 0; font-size: 16px; color: #333;">${message}</h3>
-       <div style="margin: 20px auto; width: 320px; background-color: #f1f1f1; border-radius: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
-         <div style="width: ${percentComplete}%; height: 24px; background: linear-gradient(90deg, #4285F4, #34A853); border-radius: 8px; transition: width 0.3s ease;"></div>
+  // 100%の場合は自動的に閉じる
+  if (percentComplete >= 100) {
+    const htmlOutput = HtmlService.createHtmlOutput(
+      `<div style="text-align: center; padding: 30px; min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
+         <h3 style="margin: 0 0 25px 0; font-size: 16px; color: #333;">${message}</h3>
+         <div style="margin: 20px auto; width: 320px; background-color: #f1f1f1; border-radius: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+           <div style="width: 100%; height: 24px; background: linear-gradient(90deg, #4285F4, #34A853); border-radius: 8px; transition: width 0.3s ease;"></div>
+         </div>
+         <p style="margin: 15px 0 0 0; font-size: 14px; color: #666; font-weight: 500;">100% 完了</p>
        </div>
-       <p style="margin: 15px 0 0 0; font-size: 14px; color: #666; font-weight: 500;">${percentComplete}% 完了</p>
-     </div>`
-  )
-    .setWidth(450)
-    .setHeight(250);
+       <script>
+         // 1秒後に自動的に閉じる
+         setTimeout(function() {
+           google.script.host.close();
+         }, 1000);
+       </script>`
+    )
+      .setWidth(450)
+      .setHeight(250);
 
-  SpreadsheetApp.getUi().showModelessDialog(htmlOutput, "YouTube分析 - 処理中");
+    SpreadsheetApp.getUi().showModelessDialog(htmlOutput, "YouTube分析 - 処理中");
+  } else {
+    const htmlOutput = HtmlService.createHtmlOutput(
+      `<div style="text-align: center; padding: 30px; min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
+         <h3 style="margin: 0 0 25px 0; font-size: 16px; color: #333;">${message}</h3>
+         <div style="margin: 20px auto; width: 320px; background-color: #f1f1f1; border-radius: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+           <div style="width: ${percentComplete}%; height: 24px; background: linear-gradient(90deg, #4285F4, #34A853); border-radius: 8px; transition: width 0.3s ease;"></div>
+         </div>
+         <p style="margin: 15px 0 0 0; font-size: 14px; color: #666; font-weight: 500;">${percentComplete}% 完了</p>
+       </div>`
+    )
+      .setWidth(450)
+      .setHeight(250);
+
+    SpreadsheetApp.getUi().showModelessDialog(htmlOutput, "YouTube分析 - 処理中");
+  }
 }
 
 /**
@@ -2247,7 +2347,7 @@ function updateDashboardWithChannelInfo(channelInfo) {
 
   // チャンネル説明
   dashboardSheet
-    .getRange("A19:H19")
+    .getRange("A19:I19")
     .merge()
     .setValue("チャンネル概要")
     .setFontWeight("bold")
@@ -2256,7 +2356,7 @@ function updateDashboardWithChannelInfo(channelInfo) {
     .setHorizontalAlignment("center");
 
   dashboardSheet
-    .getRange("A20:H24")
+    .getRange("A20:I24")
     .merge()
     .setValue(channelInfo.snippet.description || "説明なし")
     .setVerticalAlignment("top")
@@ -2987,6 +3087,7 @@ function analyzeVideoPerformance(silentMode = false) {
             "視聴維持率",
             "エンゲージメント率",
             "チャンネル登録率",
+            "感情指数",
             "カテゴリ",
           ],
         ]
@@ -2999,6 +3100,7 @@ function analyzeVideoPerformance(silentMode = false) {
             "高評価数",
             "コメント数",
             "長さ",
+            "感情指数",
             "カテゴリ",
           ],
         ];
@@ -3097,9 +3199,18 @@ function analyzeVideoPerformance(silentMode = false) {
         }
       }
 
-      // カテゴリ
+      // 感情指数を計算（高評価率とコメント率から算出）
+      const sentimentScore = calculateVideoSentimentScore(viewCount, likeCount, commentCount);
+      const sentimentColumn = service.hasAccess() ? "K" : "H";
       videoSheet
-        .getRange(`K${rowIndex}`)
+        .getRange(`${sentimentColumn}${rowIndex}`)
+        .setValue(sentimentScore)
+        .setFontColor(getSentimentColor(sentimentScore));
+
+      // カテゴリ
+      const categoryColumn = service.hasAccess() ? "L" : "I";
+      videoSheet
+        .getRange(`${categoryColumn}${rowIndex}`)
         .setValue(
           video.snippet.categoryId
             ? getCategoryName(video.snippet.categoryId)
@@ -3126,10 +3237,16 @@ function analyzeVideoPerformance(silentMode = false) {
     videoSheet.setColumnWidth(5, 100); // 高評価数
     videoSheet.setColumnWidth(6, 100); // コメント数
     videoSheet.setColumnWidth(7, 100); // 長さ
-    videoSheet.setColumnWidth(8, 100); // 視聴維持率
-    videoSheet.setColumnWidth(9, 100); // エンゲージメント率
-    videoSheet.setColumnWidth(10, 100); // チャンネル登録率
-    videoSheet.setColumnWidth(11, 120); // カテゴリ
+    if (service.hasAccess()) {
+      videoSheet.setColumnWidth(8, 100); // 視聴維持率
+      videoSheet.setColumnWidth(9, 100); // エンゲージメント率
+      videoSheet.setColumnWidth(10, 100); // チャンネル登録率
+      videoSheet.setColumnWidth(11, 100); // 感情指数
+      videoSheet.setColumnWidth(12, 120); // カテゴリ
+    } else {
+      videoSheet.setColumnWidth(8, 100); // 感情指数
+      videoSheet.setColumnWidth(9, 120); // カテゴリ
+    }
 
     // 既存のフィルタを削除（修正点）
     try {
@@ -3201,6 +3318,16 @@ function analyzeVideoPerformance(silentMode = false) {
 
     // ダッシュボード更新: 分析完了
     updateAnalysisSummary("動画パフォーマンス分析", "完了", `${allVideoDetails.length}動画分析`, "動画パフォーマンス分析完了");
+    
+    // 総括データを更新
+    const avgViews = allVideoDetails.length > 0 
+      ? Math.round(allVideoDetails.reduce((sum, video) => sum + parseInt(video.statistics.viewCount || 0), 0) / allVideoDetails.length)
+      : 0;
+    const totalViews = allVideoDetails.reduce((sum, video) => sum + parseInt(video.statistics.viewCount || 0), 0);
+    updateAnalysisSummaryData("動画別分析", 
+      `${allVideoDetails.length}本分析 / 平均${avgViews.toLocaleString()}回再生`, 
+      `総再生回数: ${totalViews.toLocaleString()}回`);
+    
     updateOverallAnalysisSummary();
   } catch (e) {
     Logger.log("エラー: " + e.toString());
@@ -3219,6 +3346,46 @@ function analyzeVideoPerformance(silentMode = false) {
       );
     }
   }
+}
+
+/**
+ * 動画の感情指数を計算
+ */
+function calculateVideoSentimentScore(viewCount, likeCount, commentCount) {
+  if (viewCount === 0) return "データなし";
+  
+  // 高評価率（重み: 70%）
+  const likeRate = (likeCount / viewCount) * 100;
+  
+  // コメント率（重み: 30%）
+  const commentRate = (commentCount / viewCount) * 100;
+  
+  // 感情指数を計算（0-100のスケール）
+  // 高評価率は通常0-10%程度なので10倍、コメント率は通常0-1%程度なので100倍して正規化
+  const normalizedLikeScore = Math.min(likeRate * 10, 100) * 0.7;
+  const normalizedCommentScore = Math.min(commentRate * 100, 100) * 0.3;
+  
+  const sentimentScore = normalizedLikeScore + normalizedCommentScore;
+  
+  // 感情指数を文字列で表現
+  if (sentimentScore >= 80) return "😍 最高";
+  if (sentimentScore >= 60) return "😊 良好";
+  if (sentimentScore >= 40) return "🙂 普通";
+  if (sentimentScore >= 20) return "😐 低め";
+  return "😟 要改善";
+}
+
+/**
+ * 感情指数に応じた色を返す
+ */
+function getSentimentColor(sentimentScore) {
+  if (sentimentScore === "データなし") return "#999999";
+  if (sentimentScore.includes("最高")) return "#2E7D32";
+  if (sentimentScore.includes("良好")) return "#43A047";
+  if (sentimentScore.includes("普通")) return "#FFA726";
+  if (sentimentScore.includes("低め")) return "#EF5350";
+  if (sentimentScore.includes("要改善")) return "#C62828";
+  return "#000000";
 }
 
 /**
@@ -4392,6 +4559,19 @@ function analyzeAudience(silentMode = false) {
       // プログレスバーを確実に閉じる
       closeProgressDialog();
     }
+    
+    // ダッシュボード更新: 分析完了
+    updateAnalysisSummary("視聴者分析", "完了", "年齢・性別分析完了", "視聴者層分析完了");
+    
+    // 総括データを更新
+    const genderData = audienceSheet.getRange("B5:B7").getValues();
+    const malePercent = genderData[0][0] || "0%";
+    const femalePercent = genderData[1][0] || "0%";
+    updateAnalysisSummaryData("視聴者分析", 
+      `男性${malePercent} / 女性${femalePercent}`, 
+      "年齢・性別分布の詳細分析完了");
+    
+    updateOverallAnalysisSummary();
   } catch (e) {
     Logger.log("エラー: " + e.toString());
     // プログレスバーを閉じる
@@ -4522,7 +4702,7 @@ function analyzeCommentSentiment(silentMode = false) {
     commentSheet
       .getRange("A1:H1")
       .merge()
-      .setValue("YouTube コメント感情分析")
+      .setValue("YouTube チャンネル全体コメント感情分析")
       .setFontSize(16)
       .setFontWeight("bold")
       .setHorizontalAlignment("center")
@@ -4536,9 +4716,9 @@ function analyzeCommentSentiment(silentMode = false) {
     commentSheet.getRange("C2").setValue("分析日:");
     commentSheet.getRange("D2").setValue(new Date());
 
-    // 最新動画のコメントを取得
+    // チャンネル全体のコメントを取得
     if (!silentMode) {
-      showProgressDialog("最新動画のコメントを取得中...", 30);
+      showProgressDialog("チャンネル全体のコメントを取得中...", 30);
     }
 
     const commentsData = getRecentVideoComments(channelId, apiKey);
@@ -4583,6 +4763,14 @@ function analyzeCommentSentiment(silentMode = false) {
     const totalComments = sentimentResults.total;
     const positivePercent = totalComments > 0 ? Math.round(sentimentResults.positive / totalComments * 100) : 0;
     updateAnalysisSummary("コメント感情分析", "完了", `${totalComments}件 (${positivePercent}%ポジティブ)`, "コメント感情分析完了");
+    
+    // 総括データを更新
+    const negativePercent = totalComments > 0 ? Math.round(sentimentResults.negative / totalComments * 100) : 0;
+    const neutralPercent = totalComments > 0 ? Math.round(sentimentResults.neutral / totalComments * 100) : 0;
+    updateAnalysisSummaryData("コメント分析", 
+      `ポジティブ${positivePercent}% / ネガティブ${negativePercent}%`, 
+      `${totalComments}件のコメントを感情分析完了`);
+    
     updateOverallAnalysisSummary();
 
     return sentimentResults;
@@ -4606,39 +4794,43 @@ function analyzeCommentSentiment(silentMode = false) {
 }
 
 /**
- * 最新動画のコメントを取得
+ * チャンネル全体のコメントを取得
  */
 function getRecentVideoComments(channelId, apiKey) {
   try {
-    // チャンネルの最新動画を取得
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=5&key=${apiKey}`;
+    // チャンネルの動画を取得（人気順で最大10本）
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=viewCount&maxResults=10&key=${apiKey}`;
     const searchResponse = UrlFetchApp.fetch(searchUrl);
     const searchData = JSON.parse(searchResponse.getContentText());
 
     const allComments = [];
+    const maxCommentsPerVideo = 20; // 各動画から取得するコメント数を制限
+    const maxTotalComments = 150; // 総コメント数の上限
 
     if (searchData.items && searchData.items.length > 0) {
-      for (let i = 0; i < Math.min(3, searchData.items.length); i++) {
+      for (let i = 0; i < searchData.items.length && allComments.length < maxTotalComments; i++) {
         const videoId = searchData.items[i].id.videoId;
         const videoTitle = searchData.items[i].snippet.title;
 
         try {
-          // 各動画のコメントを取得
-          const commentsUrl = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=50&order=relevance&key=${apiKey}`;
+          // 各動画のコメントを取得（関連性の高い順）
+          const commentsUrl = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=${maxCommentsPerVideo}&order=relevance&key=${apiKey}`;
           const commentsResponse = UrlFetchApp.fetch(commentsUrl);
           const commentsData = JSON.parse(commentsResponse.getContentText());
 
           if (commentsData.items) {
             commentsData.items.forEach(item => {
-              const comment = item.snippet.topLevelComment.snippet;
-              allComments.push({
-                videoId: videoId,
-                videoTitle: videoTitle,
-                text: comment.textDisplay,
-                author: comment.authorDisplayName,
-                likeCount: comment.likeCount || 0,
-                publishedAt: comment.publishedAt
-              });
+              if (allComments.length < maxTotalComments) {
+                const comment = item.snippet.topLevelComment.snippet;
+                allComments.push({
+                  videoId: videoId,
+                  videoTitle: videoTitle,
+                  text: comment.textDisplay,
+                  author: comment.authorDisplayName,
+                  likeCount: comment.likeCount || 0,
+                  publishedAt: comment.publishedAt
+                });
+              }
             });
           }
         } catch (videoError) {
@@ -4650,6 +4842,7 @@ function getRecentVideoComments(channelId, apiKey) {
       }
     }
 
+    Logger.log(`チャンネル全体から${allComments.length}件のコメントを取得しました`);
     return allComments;
   } catch (e) {
     Logger.log("コメント取得エラー: " + e.toString());
@@ -5629,6 +5822,18 @@ function analyzeEngagement(silentMode = false) {
       // プログレスバーを確実に閉じる
       closeProgressDialog();
     }
+    
+    // ダッシュボード更新: 分析完了
+    updateAnalysisSummary("エンゲージメント分析", "完了", "エンゲージメント分析完了", "エンゲージメント分析完了");
+    
+    // 総括データを更新
+    const avgLikeRate = engagementSheet.getRange("B6").getValue() || "0%";
+    const avgCommentRate = engagementSheet.getRange("B7").getValue() || "0%";
+    updateAnalysisSummaryData("エンゲージメント分析", 
+      `平均いいね率: ${avgLikeRate} / コメント率: ${avgCommentRate}`, 
+      "エンゲージメント指標の詳細分析完了");
+    
+    updateOverallAnalysisSummary();
   } catch (e) {
     Logger.log("エラー: " + e.toString());
     // プログレスバーを閉じる
@@ -6369,6 +6574,23 @@ function analyzeTrafficSources(silentMode = false) {
       // プログレスバーを確実に閉じる
       closeProgressDialog();
     }
+    
+    // ダッシュボード更新: 分析完了
+    updateAnalysisSummary("流入元分析", "完了", "トラフィックソース分析完了", "流入元分析完了");
+    
+    // 総括データを更新
+    let topTrafficSource = "データなし";
+    let topTrafficPercent = "0%";
+    if (trafficData.rows && trafficData.rows.length > 0) {
+      topTrafficSource = translateTrafficSource(trafficData.rows[0][0]);
+      const totalViews = trafficData.rows.reduce((sum, row) => sum + row[1], 0);
+      topTrafficPercent = totalViews > 0 ? ((trafficData.rows[0][1] / totalViews) * 100).toFixed(1) + "%" : "0%";
+    }
+    updateAnalysisSummaryData("トラフィック分析", 
+      `最大流入元: ${topTrafficSource} (${topTrafficPercent})`, 
+      "トラフィックソースの詳細分析完了");
+    
+    updateOverallAnalysisSummary();
   } catch (e) {
     Logger.log("エラー: " + e.toString());
     // プログレスバーを閉じる
@@ -7442,6 +7664,18 @@ function generateAIRecommendations(silentMode = false) {
       // プログレスバーを確実に閉じる
       closeProgressDialog();
     }
+    
+    // ダッシュボード更新: 分析完了
+    updateAnalysisSummary("AI推奨事項", "完了", "AI改善提案生成完了", "AI推奨事項生成完了");
+    
+    // 総括データを更新
+    const recommendationCount = aiSheet.getRange("A100:A200").getValues()
+      .filter(row => row[0] && row[0].toString().includes("提案")).length;
+    updateAnalysisSummaryData("AI提案", 
+      `${recommendationCount}個の改善提案を生成`, 
+      "チャンネル成長のための具体的な提案を生成完了");
+    
+    updateOverallAnalysisSummary();
   } catch (e) {
     Logger.log("エラー: " + e.toString());
     // プログレスバーを閉じる
