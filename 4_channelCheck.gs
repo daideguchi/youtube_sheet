@@ -1476,11 +1476,8 @@ function runChannelAnalysis(silentMode = false) {
         updateDashboardCharts(channelId, analyticsData, apiKey);
 
         if (!silentMode) {
-          showProgressDialog("分析完了", 100);
-          Utilities.sleep(1000);
+          // プログレスバーを閉じる
           closeProgressDialog();
-
-          // モーダルを表示しない - 削除
         }
       } catch (e) {
         Logger.log("Analytics APIでエラー発生: " + e.toString());
@@ -1491,19 +1488,8 @@ function runChannelAnalysis(silentMode = false) {
         getRecentVideos(channelId, apiKey, dashboardSheet);
 
         if (!silentMode) {
-          showProgressDialog("基本分析完了", 100);
-          Utilities.sleep(1000);
+          // プログレスバーを閉じる
           closeProgressDialog();
-
-          ui.alert(
-            "一部エラー",
-            "YouTube Analytics APIでエラーが発生しました。基本情報のみ表示しています。\n\n" +
-              "エラー内容: " +
-              e.toString() +
-              "\n\n" +
-              "トラブルシューティングメニューから詳細を確認できます。",
-            ui.ButtonSet.OK
-          );
         }
       }
     } else {
@@ -1514,15 +1500,8 @@ function runChannelAnalysis(silentMode = false) {
       getRecentVideos(channelId, apiKey, dashboardSheet);
 
       if (!silentMode) {
-        showProgressDialog("基本分析完了", 100);
-        Utilities.sleep(1000);
+        // プログレスバーを閉じる
         closeProgressDialog();
-
-        ui.alert(
-          "基本分析完了",
-          "チャンネルの基本情報を取得しました。\n\n詳細な分析データ（視聴者層、収益、視聴維持率など）を取得するには、チャンネル所有者としてOAuth認証が必要です。\n\n「YouTube分析」メニューから「OAuth認証再設定」を実行してください。",
-          ui.ButtonSet.OK
-        );
       }
     }
   } catch (e) {
@@ -3083,18 +3062,10 @@ function analyzeVideoPerformance(silentMode = false) {
       videoSheet.setActiveSelection("A1");
     }
 
-    // 分析完了（サイレントモードでない場合のみアラート表示）
+    // 分析完了（サイレントモードでない場合のみプログレスバーを閉じる）
     if (!silentMode) {
-      showProgressDialog("動画別パフォーマンス分析完了", 100);
       // プログレスバーを確実に閉じる
-      Utilities.sleep(1000);
       closeProgressDialog();
-
-      ui.alert(
-        "分析完了",
-        "動画別パフォーマンス分析が完了しました。",
-        ui.ButtonSet.OK
-      );
     }
   } catch (e) {
     Logger.log("エラー: " + e.toString());
@@ -3673,26 +3644,94 @@ function analyzeAudience(silentMode = false) {
 
       if (hasGenderInfo) {
         // 年齢・性別の組み合わせデータの場合
-        audienceSheet
-          .getRange(`A${currentRow}:C${currentRow}`)
-          .setValues([["年齢層", "性別", "視聴者割合 (%)"]])
-          .setFontWeight("bold")
-          .setBackground("#F8F9FA");
-        currentRow++;
-
+        
+        // データを整理・ソート
+        const processedData = [];
         for (let i = 0; i < ageGenderData.rows.length; i++) {
           const row = ageGenderData.rows[i];
           const ageGroup = translateAgeGroup(row[0]);
-          const gender =
-            row[1] === "MALE" ? "男性" : row[1] === "FEMALE" ? "女性" : row[1];
-          const percentage = row[2];
+          const gender = row[1] === "MALE" ? "男性" : row[1] === "FEMALE" ? "女性" : 
+                        row[1] === "genderUserSpecified" ? "その他" : row[1];
+          const percentage = parseFloat(row[2]) || 0;
+          
+          // 0%のデータは除外
+          if (percentage > 0) {
+            processedData.push({
+              ageGroup: ageGroup,
+              gender: gender,
+              percentage: percentage,
+              sortKey: getAgeSortKey(row[0]) + (gender === "男性" ? "1" : gender === "女性" ? "2" : "3")
+            });
+          }
+        }
+        
+        // 年齢順、性別順でソート
+        processedData.sort((a, b) => {
+          if (a.sortKey !== b.sortKey) return a.sortKey.localeCompare(b.sortKey);
+          return b.percentage - a.percentage; // 同じ年齢・性別なら割合の降順
+        });
+        
+        // 見やすい表形式で表示
+        audienceSheet
+          .getRange(`A${currentRow}:C${currentRow}`)
+          .setValues([["年齢層", "性別", "視聴者割合"]])
+          .setFontWeight("bold")
+          .setBackground("#4285F4")
+          .setFontColor("white")
+          .setHorizontalAlignment("center");
+        currentRow++;
 
-          audienceSheet.getRange(`A${currentRow}`).setValue(ageGroup);
-          audienceSheet.getRange(`B${currentRow}`).setValue(gender);
+        // データを表示
+        for (const data of processedData) {
+          audienceSheet.getRange(`A${currentRow}`).setValue(data.ageGroup);
+          audienceSheet.getRange(`B${currentRow}`).setValue(data.gender);
           audienceSheet
             .getRange(`C${currentRow}`)
-            .setValue(percentage.toFixed(1) + "%");
+            .setValue(data.percentage.toFixed(1) + "%");
+          
+          // 行の背景色を交互に設定
+          const bgColor = currentRow % 2 === 0 ? "#F8F9FA" : "#FFFFFF";
+          audienceSheet.getRange(`A${currentRow}:C${currentRow}`).setBackground(bgColor);
+          
+          // 性別に応じて文字色を設定
+          const fontColor = data.gender === "男性" ? "#1E88E5" : 
+                           data.gender === "女性" ? "#E53935" : "#757575";
+          audienceSheet.getRange(`B${currentRow}`).setFontColor(fontColor);
+          
           currentRow++;
+        }
+        
+        // 年齢性別組み合わせの棒グラフを追加
+        if (processedData.length > 0) {
+          currentRow++;
+          const chartDataStartRow = currentRow - processedData.length - 1;
+          
+          const ageGenderChart = audienceSheet
+            .newChart()
+            .setChartType(Charts.ChartType.COLUMN)
+            .addRange(
+              audienceSheet.getRange(
+                `A${chartDataStartRow}:C${currentRow - 2}`
+              )
+            )
+            .setPosition(currentRow + 1, 1, 0, 0)
+            .setOption("title", "年齢・性別別視聴者分布")
+            .setOption("width", 800)
+            .setOption("height", 400)
+            .setOption("legend", { position: "bottom" })
+            .setOption("hAxis", { 
+              title: "年齢層・性別",
+              textStyle: { fontSize: 10 }
+            })
+            .setOption("vAxis", { title: "視聴者割合 (%)" })
+            .setOption("colors", ["#4285F4", "#EA4335", "#FBBC04"])
+            .setOption("series", {
+              0: { targetAxisIndex: 0, type: "columns" }
+            })
+            .build();
+
+          audienceSheet.insertChart(ageGenderChart);
+          currentRow += 25; // グラフ用のスペース
         }
 
         // 性別合計を計算（完全修正版）
@@ -4121,14 +4160,10 @@ function analyzeAudience(silentMode = false) {
       audienceSheet.setActiveSelection("A1");
     }
 
-    // 分析完了（サイレントモードでない場合のみアラート表示）
+    // 分析完了（サイレントモードでない場合のみプログレスバーを閉じる）
     if (!silentMode) {
-      showProgressDialog("視聴者層分析完了", 100);
       // プログレスバーを確実に閉じる
-      Utilities.sleep(1000);
       closeProgressDialog();
-
-      // モーダルを表示しない - 削除
     }
   } catch (e) {
     Logger.log("エラー: " + e.toString());
@@ -4159,6 +4194,37 @@ function translateAgeGroup(ageGroup) {
   };
 
   return translations[ageGroup] || ageGroup;
+}
+
+/**
+ * 年齢層のソートキーを取得
+ */
+function getAgeSortKey(ageGroup) {
+  const sortKeys = {
+    AGE_13_17: "01",
+    age13_17: "01",
+    "age13-17": "01",
+    AGE_18_24: "02",
+    age18_24: "02", 
+    "age18-24": "02",
+    AGE_25_34: "03",
+    age25_34: "03",
+    "age25-34": "03",
+    AGE_35_44: "04",
+    age35_44: "04",
+    "age35-44": "04",
+    AGE_45_54: "05",
+    age45_54: "05",
+    "age45-54": "05",
+    AGE_55_64: "06",
+    age55_64: "06",
+    "age55-64": "06",
+    AGE_65_: "07",
+    age65_: "07",
+    "age65-": "07"
+  };
+
+  return sortKeys[ageGroup] || "99";
 }
 
 /**
@@ -4950,18 +5016,10 @@ function analyzeEngagement(silentMode = false) {
       engagementSheet.setActiveSelection("A1");
     }
 
-    // 分析完了（サイレントモードでない場合のみアラート表示）
+    // 分析完了（サイレントモードでない場合のみプログレスバーを閉じる）
     if (!silentMode) {
-      showProgressDialog("エンゲージメント分析完了", 100);
       // プログレスバーを確実に閉じる
-      Utilities.sleep(1000);
       closeProgressDialog();
-
-      ui.alert(
-        "分析完了",
-        "エンゲージメント分析が完了しました。",
-        ui.ButtonSet.OK
-      );
     }
   } catch (e) {
     Logger.log("エラー: " + e.toString());
@@ -5698,18 +5756,10 @@ function analyzeTrafficSources(silentMode = false) {
       trafficSheet.setActiveSelection("A1");
     }
 
-    // 分析完了（サイレントモードでない場合のみアラート表示）
+    // 分析完了（サイレントモードでない場合のみプログレスバーを閉じる）
     if (!silentMode) {
-      showProgressDialog("トラフィックソース分析完了", 100);
       // プログレスバーを確実に閉じる
-      Utilities.sleep(1000);
       closeProgressDialog();
-
-      ui.alert(
-        "分析完了",
-        "トラフィックソース分析が完了しました。",
-        ui.ButtonSet.OK
-      );
     }
   } catch (e) {
     Logger.log("エラー: " + e.toString());
@@ -6779,18 +6829,10 @@ function generateAIRecommendations(silentMode = false) {
       aiSheet.setActiveSelection("A1");
     }
 
-    // 分析完了（サイレントモードでない場合のみアラート表示）
+    // 分析完了（サイレントモードでない場合のみプログレスバーを閉じる）
     if (!silentMode) {
-      showProgressDialog("AI改善提案の生成完了", 100);
       // プログレスバーを確実に閉じる
-      Utilities.sleep(1000);
       closeProgressDialog();
-
-      ui.alert(
-        "分析完了",
-        "AIによる改善提案の生成が完了しました。\n\n推奨事項に基づいて定期的にチャンネルを改善し、成長を継続させましょう！",
-        ui.ButtonSet.OK
-      );
     }
   } catch (e) {
     Logger.log("エラー: " + e.toString());
@@ -6975,7 +7017,6 @@ function troubleshootAPIs() {
     }
 
     // テスト完了
-    showProgressDialog("テスト完了", 100);
     // プログレスバーを閉じる
     closeProgressDialog();
 
@@ -7241,21 +7282,12 @@ function generateCompleteReport() {
       Logger.log("完全分析の履歴保存中にエラー: " + historyError.toString());
     }
 
-    showProgressDialog("完全分析完了!", 100);
-    Utilities.sleep(1000);
+    // 完全分析完了（プログレスバーを閉じるのみ）
     closeProgressDialog();
 
     SpreadsheetApp.getActiveSpreadsheet()
       .getSheetByName(DASHBOARD_SHEET_NAME)
       .activate();
-
-    ui.alert(
-      "完全分析完了",
-      "全ての分析モジュールの実行が完了しました。\n\n" +
-        "各シートのタブをクリックして詳細な分析結果を確認できます。\n\n" +
-        "特に「AI提案」シートには、チャンネル成長のための具体的な改善提案が含まれています。",
-      ui.ButtonSet.OK
-    );
   } catch (e) {
     closeProgressDialog();
     ui.alert(
