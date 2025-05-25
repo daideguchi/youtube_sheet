@@ -12,6 +12,44 @@ const AI_FEEDBACK_SHEET_NAME = "AIフィードバック";
 // 分析履歴保管用
 const ANALYSIS_HISTORY_SHEET_NAME = "分析履歴";
 
+// Claude API設定
+const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+
+/**
+ * Claude APIキーを取得（プロパティサービスから）
+ */
+function getClaudeApiKey() {
+  // まずスクリプトプロパティから取得を試行
+  let apiKey = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
+  
+  // プロパティに設定されていない場合は設定を促す
+  if (!apiKey) {
+    const ui = SpreadsheetApp.getUi();
+    const result = ui.prompt(
+      'Claude APIキー設定',
+      'Claude APIキーを入力してください:\n(このキーは安全に保存され、コードには表示されません)',
+      ui.ButtonSet.OK_CANCEL
+    );
+    
+    if (result.getSelectedButton() === ui.Button.OK) {
+      apiKey = result.getResponseText().trim();
+      if (apiKey) {
+        // プロパティサービスに安全に保存
+        PropertiesService.getScriptProperties().setProperty('CLAUDE_API_KEY', apiKey);
+        ui.alert('設定完了', 'Claude APIキーが安全に保存されました。', ui.ButtonSet.OK);
+      } else {
+        ui.alert('エラー', 'APIキーが入力されませんでした。', ui.ButtonSet.OK);
+        return null;
+      }
+    } else {
+      ui.alert('キャンセル', 'Claude API分析をキャンセルしました。', ui.ButtonSet.OK);
+      return null;
+    }
+  }
+  
+  return apiKey;
+}
+
 // セル参照（8行目データ行版）
 const CHANNEL_ID_CELL = "B2";
 const CHANNEL_NAME_CELL = "C3";
@@ -61,6 +99,7 @@ function createImprovedUserInterface() {
     )
     .addSeparator()
     .addItem("🤖 AIによる改善提案を生成", "generateAIRecommendations")
+    .addItem("🧠 Claude AI戦略分析", "runClaudeAnalysis")
     .addItem("📊 分析履歴を確認", "viewAnalysisHistory")
     .addSeparator()
     .addItem("🏠 ダッシュボード初期化", "initializeDashboard")
@@ -1272,15 +1311,6 @@ function debugOAuthStatus() {
   } catch (e) {
     ui.alert('エラー', 'OAuth状態確認中にエラー: ' + e.toString(), ui.ButtonSet.OK);
   }
-}
-/**
- * OAuth認証のコールバック処理（ライブラリなし版）
- */
-function handleOAuthCallback(request) {
-  // 手動認証方式のため、常にfalseを返す
-  return HtmlService.createHtmlOutput(
-    "手動認証方式を使用しています。認証コードを手動で入力してください。"
-  );
 }
 /**
  * API認証状態の表示を更新（詳細版）
