@@ -1110,18 +1110,18 @@ function updateAPIStatus() {
  */
 function showProgressDialog(message, percentComplete) {
   const htmlOutput = HtmlService.createHtmlOutput(
-    `<div style="text-align: center; padding: 20px;">
-       <h3 style="margin-top: 10px; margin-bottom: 20px;">${message}</h3>
-       <div style="margin: 20px auto; width: 300px; background-color: #f1f1f1; border-radius: 5px;">
-         <div style="width: ${percentComplete}%; height: 20px; background-color: #4285F4; border-radius: 5px;"></div>
+    `<div style="text-align: center; padding: 30px; min-height: 120px; display: flex; flex-direction: column; justify-content: center;">
+       <h3 style="margin: 0 0 25px 0; font-size: 16px; color: #333;">${message}</h3>
+       <div style="margin: 20px auto; width: 320px; background-color: #f1f1f1; border-radius: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+         <div style="width: ${percentComplete}%; height: 24px; background: linear-gradient(90deg, #4285F4, #34A853); border-radius: 8px; transition: width 0.3s ease;"></div>
        </div>
-       <p style="margin-top: 10px;">${percentComplete}% 完了</p>
+       <p style="margin: 15px 0 0 0; font-size: 14px; color: #666; font-weight: 500;">${percentComplete}% 完了</p>
      </div>`
   )
-    .setWidth(400) // 横幅を増加
-    .setHeight(180); // 縦幅を増加
+    .setWidth(450)
+    .setHeight(250);
 
-  SpreadsheetApp.getUi().showModelessDialog(htmlOutput, "処理中...");
+  SpreadsheetApp.getUi().showModelessDialog(htmlOutput, "YouTube分析 - 処理中");
 }
 
 /**
@@ -1132,23 +1132,39 @@ function showProgressDialog(message, percentComplete) {
 function closeProgressDialog() {
   try {
     // Google Apps Scriptでは、プログレスダイアログを直接閉じる方法がないため、
-    // 非常に小さな透明なダイアログを短時間表示してから自動で消すアプローチを使用
+    // 非常に小さな透明なダイアログで置き換えて即座に閉じるアプローチを使用
     const htmlOutput = HtmlService.createHtmlOutput(
-      `
-      <script>
+      `<script>
+        // ダイアログを即座に閉じる
         setTimeout(function() {
-          google.script.host.close();
-        }, 100);
+          try {
+            google.script.host.close();
+          } catch(e) {
+            console.log('Dialog close error:', e);
+          }
+        }, 50);
       </script>
-    `
+      <div style="display:none;"></div>`
     )
       .setWidth(1)
       .setHeight(1);
 
-    SpreadsheetApp.getUi().showModelessDialog(htmlOutput, "");
+    SpreadsheetApp.getUi().showModelessDialog(htmlOutput, " ");
 
-    // さらに確実にするため、少し待機してから空の関数を実行
-    Utilities.sleep(200);
+    // 確実に閉じるため、少し待機
+    Utilities.sleep(150);
+    
+    // 最終手段として空のダイアログで上書き
+    try {
+      const emptyOutput = HtmlService.createHtmlOutput("")
+        .setWidth(1)
+        .setHeight(1);
+      SpreadsheetApp.getUi().showModelessDialog(emptyOutput, " ");
+      Utilities.sleep(50);
+    } catch (finalError) {
+      Logger.log("最終的なダイアログクローズでエラー: " + finalError.toString());
+    }
+    
   } catch (e) {
     // ダイアログを閉じる処理でエラーが発生した場合はログに記録
     Logger.log("プログレスダイアログを閉じる際にエラー: " + e.toString());
@@ -1279,24 +1295,6 @@ function showTroubleshootingResults(testResults) {
   showModalDialog(ui, resultsHtml, "診断結果", 600, 350);
 }
 
-/**
- * プログレスバーを表示
- */
-function showProgressDialog(message, percentComplete) {
-  const htmlOutput = HtmlService.createHtmlOutput(
-    `<div style="text-align: center; padding: 20px;">
-       <h3>${message}</h3>
-       <div style="margin: 20px auto; width: 300px; background-color: #f1f1f1; border-radius: 5px;">
-         <div style="width: ${percentComplete}%; height: 20px; background-color: #4285F4; border-radius: 5px;"></div>
-       </div>
-       <p>${percentComplete}% 完了</p>
-     </div>`
-  )
-    .setWidth(350)
-    .setHeight(150);
-
-  SpreadsheetApp.getUi().showModelessDialog(htmlOutput, "処理中...");
-}
 /**
  * メインの分析実行機能（修正版）
  */
@@ -3616,9 +3614,13 @@ function analyzeAudience(silentMode = false) {
         const genderTotals = { MALE: 0, FEMALE: 0 };
         ageGenderData.rows.forEach((row) => {
           if (row[1] === "MALE" || row[1] === "FEMALE") {
-            genderTotals[row[1]] += row[2];
+            const percentage = parseFloat(row[2]) || 0;
+            genderTotals[row[1]] += percentage;
           }
         });
+        
+        // デバッグ用ログ
+        Logger.log(`性別合計計算結果: 男性=${genderTotals.MALE}%, 女性=${genderTotals.FEMALE}%`);
 
         // 性別合計を表示
         currentRow++;
