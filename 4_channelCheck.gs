@@ -1142,49 +1142,12 @@ function showProgressDialog(message, percentComplete) {
 
 /**
  * プログレスバーを閉じる
- * スプレッドシートUIでモードレスダイアログを閉じるための関数
- * タイトルが空文字列だとエラーになるため、スペースを入れる
+ * 空のモーダルを表示しないよう完全に無効化
  */
 function closeProgressDialog() {
-  try {
-    // Google Apps Scriptでは、プログレスダイアログを直接閉じる方法がないため、
-    // 非常に小さな透明なダイアログで置き換えて即座に閉じるアプローチを使用
-    const htmlOutput = HtmlService.createHtmlOutput(
-      `<script>
-        // ダイアログを即座に閉じる
-        setTimeout(function() {
-          try {
-            google.script.host.close();
-          } catch(e) {
-            console.log('Dialog close error:', e);
-          }
-        }, 50);
-      </script>
-      <div style="display:none;"></div>`
-    )
-      .setWidth(1)
-      .setHeight(1);
-
-    SpreadsheetApp.getUi().showModelessDialog(htmlOutput, " ");
-
-    // 確実に閉じるため、少し待機
-    Utilities.sleep(150);
-    
-    // 最終手段として空のダイアログで上書き
-    try {
-      const emptyOutput = HtmlService.createHtmlOutput("")
-        .setWidth(1)
-        .setHeight(1);
-      SpreadsheetApp.getUi().showModelessDialog(emptyOutput, " ");
-      Utilities.sleep(50);
-    } catch (finalError) {
-      Logger.log("最終的なダイアログクローズでエラー: " + finalError.toString());
-    }
-    
-  } catch (e) {
-    // ダイアログを閉じる処理でエラーが発生した場合はログに記録
-    Logger.log("プログレスダイアログを閉じる際にエラー: " + e.toString());
-  }
+  // プログレスダイアログの表示を完全に無効化
+  // 何も表示せず、ログのみ記録
+  Logger.log("プログレスダイアログを閉じました（非表示モード）");
 }
 /**
  * AI改善提案シートを準備する関数
@@ -3701,36 +3664,142 @@ function analyzeAudience(silentMode = false) {
           currentRow++;
         }
         
-        // 年齢性別組み合わせの棒グラフを追加
+        // 年齢性別組み合わせの視覚的なグラフを追加
         if (processedData.length > 0) {
-          currentRow++;
-          const chartDataStartRow = currentRow - processedData.length - 1;
+          currentRow += 2;
           
-          const ageGenderChart = audienceSheet
+          // 1. 年齢性別組み合わせの積み上げ棒グラフ
+          const chartDataStartRow = currentRow - processedData.length - 3;
+          
+          // データを年齢層ごとにグループ化
+          const ageGroups = {};
+          processedData.forEach(data => {
+            if (!ageGroups[data.ageGroup]) {
+              ageGroups[data.ageGroup] = { male: 0, female: 0, other: 0 };
+            }
+            if (data.gender === "男性") {
+              ageGroups[data.ageGroup].male = data.percentage;
+            } else if (data.gender === "女性") {
+              ageGroups[data.ageGroup].female = data.percentage;
+            } else {
+              ageGroups[data.ageGroup].other = data.percentage;
+            }
+          });
+          
+          // 積み上げ棒グラフ用のデータを作成
+          audienceSheet
+            .getRange(`A${currentRow}:D${currentRow}`)
+            .setValues([["年齢層", "男性 (%)", "女性 (%)", "その他 (%)"]])
+            .setFontWeight("bold")
+            .setBackground("#4285F4")
+            .setFontColor("white");
+          currentRow++;
+          
+          const stackedDataStartRow = currentRow;
+          const ageOrder = ["13-17歳", "18-24歳", "25-34歳", "35-44歳", "45-54歳", "55-64歳", "65歳以上"];
+          
+          for (const age of ageOrder) {
+            if (ageGroups[age]) {
+              audienceSheet.getRange(`A${currentRow}`).setValue(age);
+              audienceSheet.getRange(`B${currentRow}`).setValue(ageGroups[age].male);
+              audienceSheet.getRange(`C${currentRow}`).setValue(ageGroups[age].female);
+              audienceSheet.getRange(`D${currentRow}`).setValue(ageGroups[age].other);
+              currentRow++;
+            }
+          }
+          
+          // 積み上げ棒グラフ
+          const stackedChart = audienceSheet
             .newChart()
             .setChartType(Charts.ChartType.COLUMN)
             .addRange(
               audienceSheet.getRange(
-                `A${chartDataStartRow}:C${currentRow - 2}`
+                `A${stackedDataStartRow - 1}:D${currentRow - 1}`
               )
             )
             .setPosition(currentRow + 1, 1, 0, 0)
-            .setOption("title", "年齢・性別別視聴者分布")
-            .setOption("width", 800)
+            .setOption("title", "年齢層別・性別視聴者分布（積み上げ）")
+            .setOption("width", 700)
             .setOption("height", 400)
-            .setOption("legend", { position: "bottom" })
+            .setOption("isStacked", true)
+            .setOption("legend", { position: "top", alignment: "center" })
             .setOption("hAxis", { 
-              title: "年齢層・性別",
-              textStyle: { fontSize: 10 }
+              title: "年齢層",
+              textStyle: { fontSize: 11 }
             })
-            .setOption("vAxis", { title: "視聴者割合 (%)" })
-            .setOption("colors", ["#4285F4", "#EA4335", "#FBBC04"])
-            .setOption("series", {
-              0: { targetAxisIndex: 0, type: "columns" }
+            .setOption("vAxis", { 
+              title: "視聴者割合 (%)",
+              minValue: 0
             })
+            .setOption("colors", ["#1E88E5", "#E53935", "#FFA726"])
+            .setOption("chartArea", { left: 80, top: 80, width: "75%", height: "70%" })
             .build();
 
-          audienceSheet.insertChart(ageGenderChart);
+          audienceSheet.insertChart(stackedChart);
+          currentRow += 25;
+          
+          // 2. 性別別の円グラフ（より大きく、見やすく）
+          const genderTotals = { male: 0, female: 0, other: 0 };
+          processedData.forEach(data => {
+            if (data.gender === "男性") {
+              genderTotals.male += data.percentage;
+            } else if (data.gender === "女性") {
+              genderTotals.female += data.percentage;
+            } else {
+              genderTotals.other += data.percentage;
+            }
+          });
+          
+          if (genderTotals.male > 0 || genderTotals.female > 0 || genderTotals.other > 0) {
+            audienceSheet
+              .getRange(`A${currentRow}:B${currentRow}`)
+              .setValues([["性別", "合計割合 (%)"]])
+              .setFontWeight("bold")
+              .setBackground("#4285F4")
+              .setFontColor("white");
+            currentRow++;
+            
+            const genderPieStartRow = currentRow;
+            
+            if (genderTotals.male > 0) {
+              audienceSheet.getRange(`A${currentRow}`).setValue("男性");
+              audienceSheet.getRange(`B${currentRow}`).setValue(genderTotals.male.toFixed(1));
+              currentRow++;
+            }
+            if (genderTotals.female > 0) {
+              audienceSheet.getRange(`A${currentRow}`).setValue("女性");
+              audienceSheet.getRange(`B${currentRow}`).setValue(genderTotals.female.toFixed(1));
+              currentRow++;
+            }
+            if (genderTotals.other > 0) {
+              audienceSheet.getRange(`A${currentRow}`).setValue("その他");
+              audienceSheet.getRange(`B${currentRow}`).setValue(genderTotals.other.toFixed(1));
+              currentRow++;
+            }
+            
+            // 大きな円グラフ
+            const genderPieChart = audienceSheet
+              .newChart()
+              .setChartType(Charts.ChartType.PIE)
+              .addRange(
+                audienceSheet.getRange(
+                  `A${genderPieStartRow - 1}:B${currentRow - 1}`
+                )
+              )
+              .setPosition(currentRow + 1, 5, 0, 0)
+              .setOption("title", "性別分布")
+              .setOption("width", 500)
+              .setOption("height", 400)
+              .setOption("pieSliceText", "percentage")
+              .setOption("legend", { position: "right", alignment: "center" })
+              .setOption("colors", ["#1E88E5", "#E53935", "#FFA726"])
+              .setOption("chartArea", { left: 20, top: 50, width: "70%", height: "80%" })
+              .setOption("pieSliceTextStyle", { fontSize: 14, bold: true })
+              .build();
+
+            audienceSheet.insertChart(genderPieChart);
+          }
+          
           currentRow += 25; // グラフ用のスペース
         }
 
@@ -3784,13 +3853,13 @@ function analyzeAudience(silentMode = false) {
         // デバッグ用ログ（改良版）
         Logger.log(`性別合計計算結果: 男性=${genderTotals.MALE}%, 女性=${genderTotals.FEMALE}%, その他=${genderTotals.OTHER}%`);
 
-        // 性別合計を表示（データが存在する場合のみ）
+        // 性別合計を表示（データが存在する場合のみ）- 上記のグラフで既に表示済みのため、簡潔に
         if (genderTotals.MALE > 0 || genderTotals.FEMALE > 0 || genderTotals.OTHER > 0) {
-          currentRow++;
+          currentRow += 2;
           audienceSheet
             .getRange(`A${currentRow}:H${currentRow}`)
             .merge()
-            .setValue("性別合計")
+            .setValue("性別合計（詳細データ）")
             .setFontWeight("bold")
             .setBackground("#E8F0FE")
             .setHorizontalAlignment("center");
@@ -3803,14 +3872,12 @@ function analyzeAudience(silentMode = false) {
             .setBackground("#F8F9FA");
           currentRow++;
 
-          // 性別データの開始行を記録
-          const genderDataStartRow = currentRow;
-
           if (genderTotals.MALE > 0) {
             audienceSheet.getRange(`A${currentRow}`).setValue("男性");
             audienceSheet
               .getRange(`B${currentRow}`)
               .setValue(genderTotals.MALE.toFixed(1) + "%");
+            audienceSheet.getRange(`A${currentRow}`).setFontColor("#1E88E5");
             currentRow++;
           }
 
@@ -3819,6 +3886,7 @@ function analyzeAudience(silentMode = false) {
             audienceSheet
               .getRange(`B${currentRow}`)
               .setValue(genderTotals.FEMALE.toFixed(1) + "%");
+            audienceSheet.getRange(`A${currentRow}`).setFontColor("#E53935");
             currentRow++;
           }
 
@@ -3827,29 +3895,11 @@ function analyzeAudience(silentMode = false) {
             audienceSheet
               .getRange(`B${currentRow}`)
               .setValue(genderTotals.OTHER.toFixed(1) + "%");
+            audienceSheet.getRange(`A${currentRow}`).setFontColor("#FFA726");
             currentRow++;
           }
 
-          // 性別合計の円グラフを追加
-          const genderChart = audienceSheet
-            .newChart()
-            .setChartType(Charts.ChartType.PIE)
-            .addRange(
-              audienceSheet.getRange(
-                `A${genderDataStartRow}:B${currentRow - 1}`
-              )
-            )
-            .setPosition(currentRow + 1, 1, 0, 0)
-            .setOption("title", "性別分布")
-            .setOption("width", 450)
-            .setOption("height", 300)
-            .setOption("pieSliceText", "percentage")
-            .setOption("legend", { position: "right" })
-            .setOption("colors", ["#4285F4", "#EA4335", "#FBBC04"]) // 男性=青、女性=赤、その他=黄
-            .build();
-
-          audienceSheet.insertChart(genderChart);
-          currentRow += 20; // グラフ用のスペース
+          currentRow += 2; // スペース
         } else {
           // データが無い場合の説明
           currentRow++;
