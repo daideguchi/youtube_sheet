@@ -1198,7 +1198,7 @@ function prepareAIFeedbackSheet(ss) {
 }
 
 /**
- * モーダルダイアログを表示する関数（高さを動的に調整）
+ * モーダルダイアログを表示する関数（高さを動的に調整、閉じるボタン付き）
  */
 function showModalDialog(ui, htmlOutput, title, baseWidth, baseHeight) {
   // 内容量に応じて高さを調整（最大600px）
@@ -1215,11 +1215,46 @@ function showModalDialog(ui, htmlOutput, title, baseWidth, baseHeight) {
   const finalHeight = Math.min(effectiveBaseHeight + heightAdjustment, 600);
   const finalWidth = baseWidth || 600;
 
-  // HTMLOutputオブジェクトの幅と高さを設定
-  htmlOutput.setWidth(finalWidth).setHeight(finalHeight);
+  // 既存のコンテンツを取得
+  let originalContent = htmlOutput.getContent();
+  
+  // 閉じるボタンとスタイルを追加したHTMLを作成
+  const enhancedContent = `
+    <div style="position: relative;">
+      <button onclick="google.script.host.close()" 
+              style="position: absolute; right: 10px; top: 10px; 
+                     background: #f44336; color: white; border: none; 
+                     border-radius: 50%; width: 30px; height: 30px; 
+                     cursor: pointer; font-size: 16px; z-index: 1000;"
+              title="閉じる">×</button>
+      <div style="padding: 10px 40px 10px 10px;">
+        ${originalContent}
+      </div>
+    </div>
+    <script>
+      // Escキーで閉じる機能を追加
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+          google.script.host.close();
+        }
+      });
+      
+      // モーダル背景をクリックして閉じる機能（オプション）
+      document.addEventListener('click', function(event) {
+        if (event.target === event.currentTarget) {
+          google.script.host.close();
+        }
+      });
+    </script>
+  `;
+
+  // 新しいHTMLOutputを作成
+  const enhancedHtmlOutput = HtmlService.createHtmlOutput(enhancedContent)
+    .setWidth(finalWidth)
+    .setHeight(finalHeight);
 
   // モーダルダイアログを表示
-  ui.showModalDialog(htmlOutput, title);
+  ui.showModalDialog(enhancedHtmlOutput, title);
 }
 
 /**
@@ -3610,78 +3645,150 @@ function analyzeAudience(silentMode = false) {
           currentRow++;
         }
 
-        // 性別合計を計算
-        const genderTotals = { MALE: 0, FEMALE: 0 };
-        ageGenderData.rows.forEach((row) => {
-          if (row[1] === "MALE" || row[1] === "FEMALE") {
+        // 性別合計を計算（修正版）
+        const genderTotals = { MALE: 0, FEMALE: 0, OTHER: 0 };
+        
+        // 詳細ログを追加
+        Logger.log(`年齢・性別データの行数: ${ageGenderData.rows.length}`);
+        Logger.log(`データの最初の数行: ${JSON.stringify(ageGenderData.rows.slice(0, 3))}`);
+        
+        ageGenderData.rows.forEach((row, index) => {
+          Logger.log(`行 ${index}: ${JSON.stringify(row)}`);
+          
+          // データの形式を確認してから処理
+          if (row.length >= 3) {
+            // 年齢・性別の組み合わせデータの場合
+            const gender = row[1];
             const percentage = parseFloat(row[2]) || 0;
-            genderTotals[row[1]] += percentage;
+            
+            if (gender === "MALE" || gender === "FEMALE") {
+              genderTotals[gender] += percentage;
+            } else if (gender) {
+              genderTotals.OTHER += percentage;
+            }
+          } else if (row.length >= 2) {
+            // 性別のみのデータの場合
+            const category = row[0];
+            const percentage = parseFloat(row[1]) || 0;
+            
+            if (category === "MALE" || category === "FEMALE") {
+              genderTotals[category] += percentage;
+            } else if (category) {
+              genderTotals.OTHER += percentage;
+            }
           }
         });
         
-        // デバッグ用ログ
-        Logger.log(`性別合計計算結果: 男性=${genderTotals.MALE}%, 女性=${genderTotals.FEMALE}%`);
+        // デバッグ用ログ（改良版）
+        Logger.log(`性別合計計算結果: 男性=${genderTotals.MALE}%, 女性=${genderTotals.FEMALE}%, その他=${genderTotals.OTHER}%`);
 
-        // 性別合計を表示
-        currentRow++;
-        audienceSheet
-          .getRange(`A${currentRow}:H${currentRow}`)
-          .merge()
-          .setValue("性別合計")
-          .setFontWeight("bold")
-          .setBackground("#E8F0FE")
-          .setHorizontalAlignment("center");
-        currentRow++;
+        // 性別合計を表示（データが存在する場合のみ）
+        if (genderTotals.MALE > 0 || genderTotals.FEMALE > 0 || genderTotals.OTHER > 0) {
+          currentRow++;
+          audienceSheet
+            .getRange(`A${currentRow}:H${currentRow}`)
+            .merge()
+            .setValue("性別合計")
+            .setFontWeight("bold")
+            .setBackground("#E8F0FE")
+            .setHorizontalAlignment("center");
+          currentRow++;
 
-        audienceSheet
-          .getRange(`A${currentRow}:B${currentRow}`)
-          .setValues([["性別", "割合 (%)"]])
-          .setFontWeight("bold")
-          .setBackground("#F8F9FA");
-        currentRow++;
+          audienceSheet
+            .getRange(`A${currentRow}:B${currentRow}`)
+            .setValues([["性別", "割合 (%)"]])
+            .setFontWeight("bold")
+            .setBackground("#F8F9FA");
+          currentRow++;
 
-        audienceSheet.getRange(`A${currentRow}`).setValue("男性");
-        audienceSheet
-          .getRange(`B${currentRow}`)
-          .setValue(genderTotals["MALE"].toFixed(1) + "%");
-        currentRow++;
-
-        audienceSheet.getRange(`A${currentRow}`).setValue("女性");
-        audienceSheet
-          .getRange(`B${currentRow}`)
-          .setValue(genderTotals["FEMALE"].toFixed(1) + "%");
-        currentRow++;
-      } else {
-        // 年齢のみまたは性別のみの場合
-        audienceSheet
-          .getRange(`A${currentRow}:B${currentRow}`)
-          .setValues([["カテゴリ", "視聴者割合 (%)"]])
-          .setFontWeight("bold")
-          .setBackground("#F8F9FA");
-        currentRow++;
-
-        for (let i = 0; i < ageGenderData.rows.length; i++) {
-          const row = ageGenderData.rows[i];
-          let category = row[0];
-
-          // 年齢層の場合は翻訳
-          if (category.startsWith("AGE_")) {
-            category = translateAgeGroup(category);
-          } else if (category === "MALE") {
-            category = "男性";
-          } else if (category === "FEMALE") {
-            category = "女性";
+          if (genderTotals.MALE > 0) {
+            audienceSheet.getRange(`A${currentRow}`).setValue("男性");
+            audienceSheet
+              .getRange(`B${currentRow}`)
+              .setValue(genderTotals.MALE.toFixed(1) + "%");
+            currentRow++;
           }
 
-          const percentage = row[1];
+          if (genderTotals.FEMALE > 0) {
+            audienceSheet.getRange(`A${currentRow}`).setValue("女性");
+            audienceSheet
+              .getRange(`B${currentRow}`)
+              .setValue(genderTotals.FEMALE.toFixed(1) + "%");
+            currentRow++;
+          }
 
-          audienceSheet.getRange(`A${currentRow}`).setValue(category);
-          audienceSheet
-            .getRange(`B${currentRow}`)
-            .setValue(percentage.toFixed(1) + "%");
+          if (genderTotals.OTHER > 0) {
+            audienceSheet.getRange(`A${currentRow}`).setValue("その他/不明");
+            audienceSheet
+              .getRange(`B${currentRow}`)
+              .setValue(genderTotals.OTHER.toFixed(1) + "%");
+            currentRow++;
+          }
+        } else {
+          // データが無い場合の説明
           currentRow++;
+          audienceSheet
+            .getRange(`A${currentRow}:H${currentRow}`)
+            .merge()
+            .setValue("性別データが取得できませんでした")
+            .setFontWeight("bold")
+            .setBackground("#FFE6E6")
+            .setHorizontalAlignment("center");
+          currentRow++;
+          
+          audienceSheet
+            .getRange(`A${currentRow}:H${currentRow}`)
+            .merge()
+            .setValue("理由: \n1. プライバシー保護のため、視聴者数が少ない場合は表示されません\n2. チャンネル所有者のみ閲覧可能なデータの可能性があります\n3. 分析期間中のデータが不足している可能性があります")
+            .setWrap(true)
+            .setBackground("#FFF3E0");
+          currentRow += 2;
         }
-      }
+              } else {
+          // 年齢のみまたは性別のみの場合（修正版）
+          audienceSheet
+            .getRange(`A${currentRow}:B${currentRow}`)
+            .setValues([["カテゴリ", "視聴者割合 (%)"]])
+            .setFontWeight("bold")
+            .setBackground("#F8F9FA");
+          currentRow++;
+
+          // 性別データをトラッキング
+          let hasGenderData = false;
+          const genderSummary = { MALE: 0, FEMALE: 0 };
+
+          for (let i = 0; i < ageGenderData.rows.length; i++) {
+            const row = ageGenderData.rows[i];
+            let category = row[0];
+            const percentage = parseFloat(row[1]) || 0;
+
+            // 性別データの場合は集計
+            if (category === "MALE" || category === "FEMALE") {
+              genderSummary[category] = percentage;
+              hasGenderData = true;
+            }
+
+            // 年齢層の場合は翻訳
+            if (category && category.startsWith("AGE_")) {
+              category = translateAgeGroup(category);
+            } else if (category === "MALE") {
+              category = "男性";
+            } else if (category === "FEMALE") {
+              category = "女性";
+            }
+
+            audienceSheet.getRange(`A${currentRow}`).setValue(category);
+            audienceSheet
+              .getRange(`B${currentRow}`)
+              .setValue(percentage.toFixed(1) + "%");
+            currentRow++;
+          }
+
+          // 性別データが見つかった場合、追加のログ出力
+          if (hasGenderData) {
+            Logger.log(`性別専用データが見つかりました: 男性=${genderSummary.MALE}%, 女性=${genderSummary.FEMALE}%`);
+          }
+        }
 
       // 年齢・性別データのグラフ
       const ageGenderChart = audienceSheet
