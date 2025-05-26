@@ -175,15 +175,15 @@ function checkH7Status() {
 }
 
 /**
- * ダッシュボードのヘッダーを確実に設定する関数（H7完全保護版）
+ * ダッシュボードのヘッダーを確実に設定する関数（包括的改善版）
  */
 function setupImprovedDashboardHeaders(dashboardSheet) {
   // メインヘッダー部分の設定
   dashboardSheet
-    .getRange("A1:H1")
+    .getRange("A1:L1")
     .merge()
-    .setValue("YouTube チャンネル分析ダッシュボード")
-    .setFontSize(16)
+    .setValue("🎯 YouTube チャンネル分析ダッシュボード")
+    .setFontSize(18)
     .setFontWeight("bold")
     .setHorizontalAlignment("center")
     .setBackground("#4285F4")
@@ -192,7 +192,7 @@ function setupImprovedDashboardHeaders(dashboardSheet) {
   // 入力セクション（1つに統一）
   dashboardSheet
     .getRange("A2")
-    .setValue("チャンネル入力（@ハンドル または チャンネルID）:")
+    .setValue("📝 チャンネル入力（@ハンドル または チャンネルID）:")
     .setFontWeight("bold")
     .setBackground("#E8F0FE");
   
@@ -209,104 +209,73 @@ function setupImprovedDashboardHeaders(dashboardSheet) {
   // チャンネル情報表示欄
   dashboardSheet
     .getRange("A3")
-    .setValue("チャンネル名:")
+    .setValue("📺 チャンネル名:")
     .setFontWeight("bold");
-  dashboardSheet.getRange("A4").setValue("分析日:").setFontWeight("bold");
+  dashboardSheet.getRange("A4").setValue("📅 分析日:").setFontWeight("bold");
 
   // **重要：主要指標見出しを確実に設定**
   dashboardSheet
-    .getRange("A6:H6")
+    .getRange("A6:L6")
     .merge()
-    .setValue("主要パフォーマンス指標")
+    .setValue("📊 主要パフォーマンス指標")
     .setFontSize(14)
     .setFontWeight("bold")
     .setBackground("#4285F4")
     .setFontColor("white")
     .setHorizontalAlignment("center");
 
-  // **最重要：主要指標ラベルを個別に確実に設定（特にH7を保護）**
-  dashboardSheet.getRange("A7").setValue("登録者数").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("B7").setValue("総再生回数").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("C7").setValue("登録率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("D7").setValue("エンゲージメント率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("E7").setValue("視聴維持率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("F7").setValue("平均視聴時間").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  dashboardSheet.getRange("G7").setValue("クリック率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
-  
-  // **特にH7を強力に保護**
-  dashboardSheet
-    .getRange("H7")
-    .setValue("平均再生回数")
-    .setFontWeight("bold")
-    .setBackground("#E8F0FE")
-    .setHorizontalAlignment("center");
+  // **最重要：主要指標ラベルを個別に確実に設定（拡張版）**
+  dashboardSheet.getRange("A7").setValue("👥 登録者数").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("B7").setValue("👀 総再生回数").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("C7").setValue("📈 登録率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("D7").setValue("❤️ エンゲージメント率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("E7").setValue("⏱️ 視聴維持率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("F7").setValue("🕐 平均視聴時間").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("G7").setValue("🖱️ クリック率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("H7").setValue("📺 平均再生回数").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("I7").setValue("💬 コメント率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("J7").setValue("👍 いいね率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("K7").setValue("📤 共有率").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
+  dashboardSheet.getRange("L7").setValue("🎯 総合スコア").setFontWeight("bold").setBackground("#E8F0FE").setHorizontalAlignment("center");
 
   // データ行を準備
-  dashboardSheet.getRange("A8:H8").setHorizontalAlignment("center");
+  dashboardSheet.getRange("A8:L8").setHorizontalAlignment("center");
 
   // 状態表示見出し
   dashboardSheet
-    .getRange("A9:H9")
+    .getRange("A9:L9")
     .merge()
-    .setValue("API接続状態")
+    .setValue("🔗 API接続状態")
     .setFontWeight("bold")
     .setBackground("#4285F4")
     .setFontColor("white")
     .setHorizontalAlignment("center");
 
   // 状態表示
-  dashboardSheet.getRange("A10").setValue("API状態:").setFontWeight("bold");
-  dashboardSheet.getRange("A11").setValue("OAuth状態:").setFontWeight("bold");
+  dashboardSheet.getRange("A10").setValue("🔑 API状態:").setFontWeight("bold");
+  dashboardSheet.getRange("A11").setValue("🔐 OAuth状態:").setFontWeight("bold");
+  dashboardSheet.getRange("A12").setValue("🤖 Claude API状態:").setFontWeight("bold");
 
-  // 使い方ガイド
-  dashboardSheet
-    .getRange("A13:H13")
-    .merge()
-    .setValue("分析手順")
-    .setFontWeight("bold")
-    .setBackground("#4285F4")
-    .setFontColor("white")
-    .setHorizontalAlignment("center");
-
-  const instructions = [
-    [
-      "1.",
-      "APIキー設定: 「YouTube分析」メニュー→「APIキー設定」でGoogle API Consoleのキーを設定",
-    ],
-    [
-      "2.",
-      "OAuth認証: 「YouTube分析」メニュー→「OAuth認証再設定」でチャンネル所有者として認証",
-    ],
-    [
-      "3.",
-      "チャンネル入力: 上の入力欄に@ハンドル（例: @YouTube）またはチャンネルIDを入力",
-    ],
-    ["4.", "完全分析: 「ワンクリック完全分析」で全ての分析を一度に実行"],
-    [
-      "5.",
-      "個別分析: 必要に応じて「個別分析モジュール」から特定の分析を実行",
-    ],
-  ];
-
-  dashboardSheet.getRange("A14:B18").setValues(instructions);
-  dashboardSheet
-    .getRange("A14:A18")
-    .setHorizontalAlignment("center")
-    .setFontWeight("bold");
-
-  // 列幅の調整
-  dashboardSheet.setColumnWidth(1, 120);
-  dashboardSheet.setColumnWidth(2, 150);
-  dashboardSheet.setColumnWidth(3, 120);
-  dashboardSheet.setColumnWidth(4, 150);
-  dashboardSheet.setColumnWidth(5, 120);
+  // 列幅の調整（拡張版）
+  dashboardSheet.setColumnWidth(1, 130);
+  dashboardSheet.setColumnWidth(2, 130);
+  dashboardSheet.setColumnWidth(3, 100);
+  dashboardSheet.setColumnWidth(4, 130);
+  dashboardSheet.setColumnWidth(5, 110);
   dashboardSheet.setColumnWidth(6, 120);
-  dashboardSheet.setColumnWidth(7, 120);
+  dashboardSheet.setColumnWidth(7, 100);
   dashboardSheet.setColumnWidth(8, 120);
+  dashboardSheet.setColumnWidth(9, 100);
+  dashboardSheet.setColumnWidth(10, 100);
+  dashboardSheet.setColumnWidth(11, 100);
+  dashboardSheet.setColumnWidth(12, 110);
 
   // **最後にH7を再度強制確認**
   protectH7Header(dashboardSheet);
 
+  // 拡張アナリティクス情報セクションを追加
+  setupExtendedAnalyticsSection(dashboardSheet);
+  
   // 分析概要セクションを追加
   setupAnalysisSummarySection(dashboardSheet);
   
@@ -318,14 +287,164 @@ function setupImprovedDashboardHeaders(dashboardSheet) {
 }
 
 /**
+ * 拡張アナリティクス情報セクションを設定
+ */
+function setupExtendedAnalyticsSection(dashboardSheet) {
+  // 拡張アナリティクス情報セクションのヘッダー（14行目から開始）
+  dashboardSheet
+    .getRange("A14:L14")
+    .merge()
+    .setValue("📈 拡張アナリティクス情報")
+    .setFontSize(14)
+    .setFontWeight("bold")
+    .setBackground("#34A853")
+    .setFontColor("white")
+    .setHorizontalAlignment("center");
+
+  // 視聴者分析サブセクション
+  dashboardSheet
+    .getRange("A15:F15")
+    .merge()
+    .setValue("👥 視聴者分析")
+    .setFontWeight("bold")
+    .setBackground("#E8F5E8")
+    .setHorizontalAlignment("center");
+
+  dashboardSheet
+    .getRange("G15:L15")
+    .merge()
+    .setValue("📊 パフォーマンス分析")
+    .setFontWeight("bold")
+    .setBackground("#E8F5E8")
+    .setHorizontalAlignment("center");
+
+  // 視聴者分析項目
+  const audienceItems = [
+    ["年齢層", "性別分布", "地域分布", "視聴時間帯", "デバイス", "新規/既存"],
+    ["-", "-", "-", "-", "-", "-"]
+  ];
+
+  // パフォーマンス分析項目
+  const performanceItems = [
+    ["トップ動画", "成長率", "収益性", "トレンド", "競合比較", "予測"],
+    ["-", "-", "-", "-", "-", "-"]
+  ];
+
+  dashboardSheet.getRange("A16:F17").setValues(audienceItems);
+  dashboardSheet.getRange("G16:L17").setValues(performanceItems);
+  
+  // ヘッダー行のスタイル設定
+  dashboardSheet.getRange("A16:L16").setFontWeight("bold").setBackground("#F0F8F0");
+  dashboardSheet.getRange("A17:L17").setHorizontalAlignment("center");
+
+  // エンゲージメント詳細セクション
+  dashboardSheet
+    .getRange("A18:F18")
+    .merge()
+    .setValue("❤️ エンゲージメント詳細分析")
+    .setFontWeight("bold")
+    .setBackground("#EA4335")
+    .setFontColor("white")
+    .setHorizontalAlignment("center");
+
+  const engagementHeaders = [
+    ["コメント分析", "いいね分析", "共有分析", "視聴維持", "クリック分析", "感情分析"]
+  ];
+  
+  const engagementData = [
+    ["-", "-", "-", "-", "-", "-"]
+  ];
+
+  dashboardSheet.getRange("A19:F19").setValues(engagementHeaders);
+  dashboardSheet.getRange("A20:F20").setValues(engagementData);
+  
+  dashboardSheet.getRange("A19:F19").setFontWeight("bold").setBackground("#FCE8E6");
+  dashboardSheet.getRange("A20:F20").setHorizontalAlignment("center");
+
+  // 流入元・トラフィック分析
+  dashboardSheet
+    .getRange("G18:L18")
+    .merge()
+    .setValue("🚀 流入元・トラフィック分析")
+    .setFontWeight("bold")
+    .setBackground("#FBBC04")
+    .setFontColor("white")
+    .setHorizontalAlignment("center");
+
+  const trafficHeaders = [
+    ["検索流入", "外部サイト", "YouTube内", "直接", "SNS", "その他"]
+  ];
+  
+  const trafficData = [
+    ["-", "-", "-", "-", "-", "-"]
+  ];
+
+  dashboardSheet.getRange("G19:L19").setValues(trafficHeaders);
+  dashboardSheet.getRange("G20:L20").setValues(trafficData);
+  
+  dashboardSheet.getRange("G19:L19").setFontWeight("bold").setBackground("#FEF7E0");
+  dashboardSheet.getRange("G20:L20").setHorizontalAlignment("center");
+
+  // AI分析結果セクション
+  dashboardSheet
+    .getRange("A21:L21")
+    .merge()
+    .setValue("🤖 AI分析結果・推奨事項")
+    .setFontSize(14)
+    .setFontWeight("bold")
+    .setBackground("#9C27B0")
+    .setFontColor("white")
+    .setHorizontalAlignment("center");
+
+  // AI分析項目
+  const aiAnalysisHeaders = [
+    ["総合評価", "改善優先度", "成長予測", "推奨アクション", "リスク要因", "機会分析"]
+  ];
+  
+  const aiAnalysisData = [
+    ["-", "-", "-", "-", "-", "-"]
+  ];
+
+  dashboardSheet.getRange("A22:F22").setValues(aiAnalysisHeaders);
+  dashboardSheet.getRange("A23:F23").setValues(aiAnalysisData);
+  
+  dashboardSheet.getRange("A22:F22").setFontWeight("bold").setBackground("#F3E5F5");
+  dashboardSheet.getRange("A23:F23").setHorizontalAlignment("center");
+
+  // 競合・ベンチマーク分析
+  dashboardSheet
+    .getRange("G21:L21")
+    .merge()
+    .setValue("🏆 競合・ベンチマーク分析")
+    .setFontWeight("bold")
+    .setBackground("#FF5722")
+    .setFontColor("white")
+    .setHorizontalAlignment("center");
+
+  const competitorHeaders = [
+    ["業界平均", "上位チャンネル", "成長率比較", "エンゲージ比較", "コンテンツ比較", "戦略提案"]
+  ];
+  
+  const competitorData = [
+    ["-", "-", "-", "-", "-", "-"]
+  ];
+
+  dashboardSheet.getRange("G22:L22").setValues(competitorHeaders);
+  dashboardSheet.getRange("G23:L23").setValues(competitorData);
+  
+  dashboardSheet.getRange("G22:L22").setFontWeight("bold").setBackground("#FFEBE9");
+  dashboardSheet.getRange("G23:L23").setHorizontalAlignment("center");
+}
+
+/**
  * ダッシュボードに分析概要セクションを設定
  */
 function setupAnalysisSummarySection(dashboardSheet) {
-  // 分析概要セクションのヘッダー（20行目から開始）
+  // 分析概要セクションのヘッダー（25行目から開始）
   dashboardSheet
-    .getRange("A20:H20")
+    .getRange("A25:L25")
     .merge()
-    .setValue("詳細分析概要")
+    .setValue("📋 詳細分析実行状況")
     .setFontSize(14)
     .setFontWeight("bold")
     .setBackground("#4285F4")
@@ -338,30 +457,33 @@ function setupAnalysisSummarySection(dashboardSheet) {
   ];
   
   dashboardSheet
-    .getRange("A21:F21")
+    .getRange("A26:F26")
     .setValues(analysisHeaders)
     .setFontWeight("bold")
     .setBackground("#E8F0FE")
     .setHorizontalAlignment("center");
 
-  // 分析項目の初期設定
+  // 分析項目の初期設定（拡張版）
   const analysisItems = [
-    ["基本チャンネル分析", "未実行", "-", "-", "-", "実行"],
-    ["動画パフォーマンス分析", "未実行", "-", "-", "-", "実行"],
-    ["視聴者分析", "未実行", "-", "-", "-", "実行"],
-    ["エンゲージメント分析", "未実行", "-", "-", "-", "実行"],
-    ["流入元分析", "未実行", "-", "-", "-", "実行"],
-    ["コメント感情分析", "未実行", "-", "-", "-", "実行"],
-    ["AI推奨事項", "未実行", "-", "-", "-", "実行"]
+    ["📊 基本チャンネル分析", "未実行", "-", "-", "-", "実行"],
+    ["🎬 動画パフォーマンス分析", "未実行", "-", "-", "-", "実行"],
+    ["👥 視聴者分析", "未実行", "-", "-", "-", "実行"],
+    ["❤️ エンゲージメント分析", "未実行", "-", "-", "-", "実行"],
+    ["🚀 流入元分析", "未実行", "-", "-", "-", "実行"],
+    ["💬 コメント感情分析", "未実行", "-", "-", "-", "実行"],
+    ["🤖 AI推奨事項", "未実行", "-", "-", "-", "実行"],
+    ["🏆 競合分析", "未実行", "-", "-", "-", "実行"],
+    ["📈 成長予測", "未実行", "-", "-", "-", "実行"],
+    ["🎯 最適化提案", "未実行", "-", "-", "-", "実行"]
   ];
 
   dashboardSheet
-    .getRange("A22:F28")
+    .getRange("A27:F36")
     .setValues(analysisItems)
     .setHorizontalAlignment("center");
 
   // 列幅の調整
-  dashboardSheet.setColumnWidth(1, 150);
+  dashboardSheet.setColumnWidth(1, 180);
   dashboardSheet.setColumnWidth(2, 100);
   dashboardSheet.setColumnWidth(3, 150);
   dashboardSheet.setColumnWidth(4, 200);
@@ -378,15 +500,28 @@ function updateAnalysisSummary(analysisType, status, mainMetric, details) {
   
   if (!dashboardSheet) return;
 
-  // 分析タイプと行番号のマッピング
+  // 分析タイプと行番号のマッピング（拡張版）
   const analysisRowMap = {
-    "基本チャンネル分析": 22,
-    "動画パフォーマンス分析": 23,
-    "視聴者分析": 24,
-    "エンゲージメント分析": 25,
-    "流入元分析": 26,
-    "コメント感情分析": 27,
-    "AI推奨事項": 28
+    "📊 基本チャンネル分析": 27,
+    "基本チャンネル分析": 27,
+    "🎬 動画パフォーマンス分析": 28,
+    "動画パフォーマンス分析": 28,
+    "👥 視聴者分析": 29,
+    "視聴者分析": 29,
+    "❤️ エンゲージメント分析": 30,
+    "エンゲージメント分析": 30,
+    "🚀 流入元分析": 31,
+    "流入元分析": 31,
+    "💬 コメント感情分析": 32,
+    "コメント感情分析": 32,
+    "🤖 AI推奨事項": 33,
+    "AI推奨事項": 33,
+    "🏆 競合分析": 34,
+    "競合分析": 34,
+    "📈 成長予測": 35,
+    "成長予測": 35,
+    "🎯 最適化提案": 36,
+    "最適化提案": 36
   };
 
   const row = analysisRowMap[analysisType];
@@ -427,31 +562,31 @@ function updateOverallAnalysisSummary() {
   
   if (!dashboardSheet) return;
 
-  // 完了した分析の数をカウント
+  // 完了した分析の数をカウント（拡張版）
   let completedCount = 0;
-  let totalCount = 7;
+  let totalCount = 10;
 
-  for (let row = 22; row <= 28; row++) {
+  for (let row = 27; row <= 36; row++) {
     const status = dashboardSheet.getRange(`B${row}`).getValue();
     if (status === "完了") {
       completedCount++;
     }
   }
 
-  // 全体の進捗を表示（30行目に追加）
+  // 全体の進捗を表示（38行目に追加）
   dashboardSheet
-    .getRange("A30:F30")
+    .getRange("A38:L38")
     .merge()
-    .setValue(`分析進捗: ${completedCount}/${totalCount} 完了 (${Math.round(completedCount/totalCount*100)}%)`)
+    .setValue(`📊 分析進捗: ${completedCount}/${totalCount} 完了 (${Math.round(completedCount/totalCount*100)}%)`)
     .setFontWeight("bold")
     .setBackground("#F8F9FA")
     .setHorizontalAlignment("center");
 
   // 進捗バーの色設定
   if (completedCount === totalCount) {
-    dashboardSheet.getRange("A30").setBackground("#E8F5E8").setFontColor("#2E7D32");
+    dashboardSheet.getRange("A38").setBackground("#E8F5E8").setFontColor("#2E7D32");
   } else if (completedCount > 0) {
-    dashboardSheet.getRange("A30").setBackground("#FFF3E0").setFontColor("#F57C00");
+    dashboardSheet.getRange("A38").setBackground("#FFF3E0").setFontColor("#F57C00");
   }
 }
 
@@ -459,11 +594,11 @@ function updateOverallAnalysisSummary() {
  * 各分析の総括セクションを設定
  */
 function setupAnalysisSummariesSection(dashboardSheet) {
-  // 総括セクションのヘッダー（32行目から開始）
+  // 総括セクションのヘッダー（40行目から開始）
   dashboardSheet
-    .getRange("A32:I32")
+    .getRange("A40:L40")
     .merge()
-    .setValue("分析総括")
+    .setValue("📋 分析総括・詳細レポート")
     .setFontSize(14)
     .setFontWeight("bold")
     .setBackground("#4285F4")
@@ -472,34 +607,39 @@ function setupAnalysisSummariesSection(dashboardSheet) {
 
   // 各分析の総括を表示するエリアを準備
   const summaryHeaders = [
-    ["分析項目", "主要データ", "詳細"]
+    ["分析項目", "主要データ", "詳細", "推奨アクション", "優先度", "期待効果"]
   ];
   
   dashboardSheet
-    .getRange("A33:C33")
+    .getRange("A41:F41")
     .setValues(summaryHeaders)
     .setFontWeight("bold")
     .setBackground("#E8F0FE")
     .setHorizontalAlignment("center");
 
-  // 初期値を設定
+  // 初期値を設定（拡張版）
   const summaryItems = [
-    ["動画別分析", "データなし", "分析を実行してください"],
-    ["視聴者分析", "データなし", "分析を実行してください"],
-    ["エンゲージメント分析", "データなし", "分析を実行してください"],
-    ["トラフィック分析", "データなし", "分析を実行してください"],
-    ["コメント分析", "データなし", "分析を実行してください"],
-    ["AI提案", "データなし", "分析を実行してください"]
+    ["🎬 動画別分析", "データなし", "分析を実行してください", "-", "-", "-"],
+    ["👥 視聴者分析", "データなし", "分析を実行してください", "-", "-", "-"],
+    ["❤️ エンゲージメント分析", "データなし", "分析を実行してください", "-", "-", "-"],
+    ["🚀 トラフィック分析", "データなし", "分析を実行してください", "-", "-", "-"],
+    ["💬 コメント分析", "データなし", "分析を実行してください", "-", "-", "-"],
+    ["🤖 AI提案", "データなし", "分析を実行してください", "-", "-", "-"],
+    ["🏆 競合分析", "データなし", "分析を実行してください", "-", "-", "-"],
+    ["📈 成長予測", "データなし", "分析を実行してください", "-", "-", "-"]
   ];
 
   dashboardSheet
-    .getRange("A34:C39")
+    .getRange("A42:F49")
     .setValues(summaryItems);
     
-  // 列幅の調整
-  dashboardSheet.setColumnWidth(1, 150);
+  // 列幅の調整（拡張版）
+  dashboardSheet.setColumnWidth(1, 180);
   dashboardSheet.setColumnWidth(2, 200);
-  dashboardSheet.setColumnWidth(3, 300);
+  dashboardSheet.setColumnWidth(3, 250);
+  dashboardSheet.setColumnWidth(4, 200);
+  dashboardSheet.setColumnWidth(5, 100);
+  dashboardSheet.setColumnWidth(6, 150);
 }
 
 /**
@@ -511,14 +651,24 @@ function updateAnalysisSummaryData(analysisType, mainData, details) {
   
   if (!dashboardSheet) return;
 
-  // 分析タイプと行番号のマッピング
+  // 分析タイプと行番号のマッピング（拡張版）
   const summaryRowMap = {
-    "動画別分析": 34,
-    "視聴者分析": 35,
-    "エンゲージメント分析": 36,
-    "トラフィック分析": 37,
-    "コメント分析": 38,
-    "AI提案": 39
+    "🎬 動画別分析": 42,
+    "動画別分析": 42,
+    "👥 視聴者分析": 43,
+    "視聴者分析": 43,
+    "❤️ エンゲージメント分析": 44,
+    "エンゲージメント分析": 44,
+    "🚀 トラフィック分析": 45,
+    "トラフィック分析": 45,
+    "💬 コメント分析": 46,
+    "コメント分析": 46,
+    "🤖 AI提案": 47,
+    "AI提案": 47,
+    "🏆 競合分析": 48,
+    "競合分析": 48,
+    "📈 成長予測": 49,
+    "成長予測": 49
   };
 
   const row = summaryRowMap[analysisType];
@@ -527,6 +677,345 @@ function updateAnalysisSummaryData(analysisType, mainData, details) {
   // データを更新
   dashboardSheet.getRange(`B${row}`).setValue(mainData);
   dashboardSheet.getRange(`C${row}`).setValue(details);
+}
+
+/**
+ * 拡張アナリティクス情報を更新
+ */
+function updateExtendedAnalytics(analysisData) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  
+  if (!dashboardSheet || !analysisData) return;
+
+  try {
+    // 視聴者分析データの更新
+    if (analysisData.audience) {
+      updateAudienceAnalytics(dashboardSheet, analysisData.audience);
+    }
+
+    // パフォーマンス分析データの更新
+    if (analysisData.performance) {
+      updatePerformanceAnalytics(dashboardSheet, analysisData.performance);
+    }
+
+    // エンゲージメント分析データの更新
+    if (analysisData.engagement) {
+      updateEngagementAnalytics(dashboardSheet, analysisData.engagement);
+    }
+
+    // トラフィック分析データの更新
+    if (analysisData.traffic) {
+      updateTrafficAnalytics(dashboardSheet, analysisData.traffic);
+    }
+
+    // AI分析結果の更新
+    if (analysisData.aiAnalysis) {
+      updateAIAnalytics(dashboardSheet, analysisData.aiAnalysis);
+    }
+
+    // 競合分析データの更新
+    if (analysisData.competitor) {
+      updateCompetitorAnalytics(dashboardSheet, analysisData.competitor);
+    }
+
+    console.log("拡張アナリティクス情報を更新しました");
+  } catch (error) {
+    console.error("拡張アナリティクス更新エラー:", error);
+  }
+}
+
+/**
+ * 視聴者分析データを更新
+ */
+function updateAudienceAnalytics(dashboardSheet, audienceData) {
+  try {
+    const audienceRow = [
+      audienceData.topAgeGroup || "-",
+      audienceData.genderDistribution || "-",
+      audienceData.topCountries || "-",
+      audienceData.peakViewingTime || "-",
+      audienceData.topDevice || "-",
+      audienceData.newVsReturning || "-"
+    ];
+
+    dashboardSheet.getRange("A17:F17").setValues([audienceRow]);
+    
+    // 色分けによる視覚的改善
+    dashboardSheet.getRange("A17:F17").setBackground("#F0F8F0");
+  } catch (error) {
+    console.error("視聴者分析更新エラー:", error);
+  }
+}
+
+/**
+ * パフォーマンス分析データを更新
+ */
+function updatePerformanceAnalytics(dashboardSheet, performanceData) {
+  try {
+    const performanceRow = [
+      performanceData.topVideo || "-",
+      performanceData.growthRate || "-",
+      performanceData.revenue || "-",
+      performanceData.trend || "-",
+      performanceData.competitorComparison || "-",
+      performanceData.forecast || "-"
+    ];
+
+    dashboardSheet.getRange("G17:L17").setValues([performanceRow]);
+    
+    // 色分けによる視覚的改善
+    dashboardSheet.getRange("G17:L17").setBackground("#F0F8F0");
+  } catch (error) {
+    console.error("パフォーマンス分析更新エラー:", error);
+  }
+}
+
+/**
+ * エンゲージメント分析データを更新
+ */
+function updateEngagementAnalytics(dashboardSheet, engagementData) {
+  try {
+    const engagementRow = [
+      engagementData.commentAnalysis || "-",
+      engagementData.likeAnalysis || "-",
+      engagementData.shareAnalysis || "-",
+      engagementData.retentionRate || "-",
+      engagementData.clickAnalysis || "-",
+      engagementData.sentimentAnalysis || "-"
+    ];
+
+    dashboardSheet.getRange("A20:F20").setValues([engagementRow]);
+    
+    // エンゲージメント率に応じた色分け
+    if (engagementData.overallScore) {
+      const score = parseFloat(engagementData.overallScore);
+      if (score >= 8) {
+        dashboardSheet.getRange("A20:F20").setBackground("#E8F5E8"); // 緑
+      } else if (score >= 5) {
+        dashboardSheet.getRange("A20:F20").setBackground("#FFF3E0"); // オレンジ
+      } else {
+        dashboardSheet.getRange("A20:F20").setBackground("#FFEBEE"); // 赤
+      }
+    }
+  } catch (error) {
+    console.error("エンゲージメント分析更新エラー:", error);
+  }
+}
+
+/**
+ * トラフィック分析データを更新
+ */
+function updateTrafficAnalytics(dashboardSheet, trafficData) {
+  try {
+    const trafficRow = [
+      trafficData.searchTraffic || "-",
+      trafficData.externalSites || "-",
+      trafficData.youtubeInternal || "-",
+      trafficData.directTraffic || "-",
+      trafficData.socialMedia || "-",
+      trafficData.others || "-"
+    ];
+
+    dashboardSheet.getRange("G20:L20").setValues([trafficRow]);
+    
+    // 色分けによる視覚的改善
+    dashboardSheet.getRange("G20:L20").setBackground("#FEF7E0");
+  } catch (error) {
+    console.error("トラフィック分析更新エラー:", error);
+  }
+}
+
+/**
+ * AI分析結果を更新
+ */
+function updateAIAnalytics(dashboardSheet, aiData) {
+  try {
+    const aiRow = [
+      aiData.overallScore || "-",
+      aiData.improvementPriority || "-",
+      aiData.growthForecast || "-",
+      aiData.recommendedActions || "-",
+      aiData.riskFactors || "-",
+      aiData.opportunities || "-"
+    ];
+
+    dashboardSheet.getRange("A23:F23").setValues([aiRow]);
+    
+    // AI評価スコアに応じた色分け
+    if (aiData.overallScore) {
+      const score = parseFloat(aiData.overallScore);
+      if (score >= 8) {
+        dashboardSheet.getRange("A23:F23").setBackground("#E8F5E8"); // 緑
+      } else if (score >= 5) {
+        dashboardSheet.getRange("A23:F23").setBackground("#FFF3E0"); // オレンジ
+      } else {
+        dashboardSheet.getRange("A23:F23").setBackground("#FFEBEE"); // 赤
+      }
+    }
+  } catch (error) {
+    console.error("AI分析更新エラー:", error);
+  }
+}
+
+/**
+ * 競合分析データを更新
+ */
+function updateCompetitorAnalytics(dashboardSheet, competitorData) {
+  try {
+    const competitorRow = [
+      competitorData.industryAverage || "-",
+      competitorData.topChannels || "-",
+      competitorData.growthComparison || "-",
+      competitorData.engagementComparison || "-",
+      competitorData.contentComparison || "-",
+      competitorData.strategyRecommendation || "-"
+    ];
+
+    dashboardSheet.getRange("G23:L23").setValues([competitorRow]);
+    
+    // 色分けによる視覚的改善
+    dashboardSheet.getRange("G23:L23").setBackground("#FFEBE9");
+  } catch (error) {
+    console.error("競合分析更新エラー:", error);
+  }
+}
+
+/**
+ * 主要指標を拡張して更新
+ */
+function updateExtendedMainMetrics(channelData) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  
+  if (!dashboardSheet || !channelData) return;
+
+  try {
+    // 基本指標
+    const subscriberCount = channelData.subscriberCount || 0;
+    const viewCount = channelData.viewCount || 0;
+    const videoCount = channelData.videoCount || 0;
+
+    // 計算指標
+    const avgViewsPerVideo = videoCount > 0 ? Math.round(viewCount / videoCount) : 0;
+    const subscriberGrowthRate = channelData.subscriberGrowthRate || "N/A";
+    const engagementRate = channelData.engagementRate || "N/A";
+    const retentionRate = channelData.retentionRate || "N/A";
+    const avgWatchTime = channelData.avgWatchTime || "N/A";
+    const clickThroughRate = channelData.clickThroughRate || "N/A";
+    const commentRate = channelData.commentRate || "N/A";
+    const likeRate = channelData.likeRate || "N/A";
+    const shareRate = channelData.shareRate || "N/A";
+    
+    // 総合スコア計算
+    const overallScore = calculateOverallScore(channelData);
+
+    const metricsRow = [
+      formatNumber(subscriberCount),
+      formatNumber(viewCount),
+      subscriberGrowthRate,
+      engagementRate,
+      retentionRate,
+      avgWatchTime,
+      clickThroughRate,
+      formatNumber(avgViewsPerVideo),
+      commentRate,
+      likeRate,
+      shareRate,
+      overallScore
+    ];
+
+    dashboardSheet.getRange("A8:L8").setValues([metricsRow]);
+    
+    // 指標値に応じた色分け
+    applyMetricColorCoding(dashboardSheet, channelData);
+    
+    console.log("拡張主要指標を更新しました");
+  } catch (error) {
+    console.error("拡張主要指標更新エラー:", error);
+  }
+}
+
+/**
+ * 総合スコアを計算
+ */
+function calculateOverallScore(channelData) {
+  try {
+    let score = 0;
+    let factors = 0;
+
+    // エンゲージメント率
+    if (channelData.engagementRate && channelData.engagementRate !== "N/A") {
+      const engagement = parseFloat(channelData.engagementRate);
+      score += Math.min(engagement * 2, 10); // 最大10点
+      factors++;
+    }
+
+    // 視聴維持率
+    if (channelData.retentionRate && channelData.retentionRate !== "N/A") {
+      const retention = parseFloat(channelData.retentionRate);
+      score += Math.min(retention / 10, 10); // 最大10点
+      factors++;
+    }
+
+    // 成長率
+    if (channelData.subscriberGrowthRate && channelData.subscriberGrowthRate !== "N/A") {
+      const growth = parseFloat(channelData.subscriberGrowthRate);
+      score += Math.min(growth / 2, 10); // 最大10点
+      factors++;
+    }
+
+    return factors > 0 ? (score / factors).toFixed(1) : "N/A";
+  } catch (error) {
+    console.error("総合スコア計算エラー:", error);
+    return "N/A";
+  }
+}
+
+/**
+ * 指標値に応じた色分けを適用
+ */
+function applyMetricColorCoding(dashboardSheet, channelData) {
+  try {
+    // エンゲージメント率の色分け
+    if (channelData.engagementRate && channelData.engagementRate !== "N/A") {
+      const engagement = parseFloat(channelData.engagementRate);
+      if (engagement >= 5) {
+        dashboardSheet.getRange("D8").setBackground("#E8F5E8"); // 緑
+      } else if (engagement >= 2) {
+        dashboardSheet.getRange("D8").setBackground("#FFF3E0"); // オレンジ
+      } else {
+        dashboardSheet.getRange("D8").setBackground("#FFEBEE"); // 赤
+      }
+    }
+
+    // 視聴維持率の色分け
+    if (channelData.retentionRate && channelData.retentionRate !== "N/A") {
+      const retention = parseFloat(channelData.retentionRate);
+      if (retention >= 60) {
+        dashboardSheet.getRange("E8").setBackground("#E8F5E8"); // 緑
+      } else if (retention >= 40) {
+        dashboardSheet.getRange("E8").setBackground("#FFF3E0"); // オレンジ
+      } else {
+        dashboardSheet.getRange("E8").setBackground("#FFEBEE"); // 赤
+      }
+    }
+
+    // 総合スコアの色分け
+    const overallScore = dashboardSheet.getRange("L8").getValue();
+    if (overallScore && overallScore !== "N/A") {
+      const score = parseFloat(overallScore);
+      if (score >= 8) {
+        dashboardSheet.getRange("L8").setBackground("#E8F5E8"); // 緑
+      } else if (score >= 5) {
+        dashboardSheet.getRange("L8").setBackground("#FFF3E0"); // オレンジ
+      } else {
+        dashboardSheet.getRange("L8").setBackground("#FFEBEE"); // 赤
+      }
+    }
+  } catch (error) {
+    console.error("色分け適用エラー:", error);
+  }
 }
 
 /**
@@ -4354,7 +4843,7 @@ function analyzeAudience(silentMode = false) {
           audienceSheet
             .getRange(`A${currentRow}:H${currentRow}`)
             .merge()
-            .setValue("理由: \n1. プライバシー保護のため、視聴者数が少ない場合は表示されません\n2. チャンネル所有者のみ閲覧可能なデータの可能性があります\n3. 分析期間中のデータが不足している可能性があります")
+            .setValue("理由: \n1. プライバシー保護のため、視聴者数が少ない場合は表示されません\n2. チャンネル所有者以外は制限される場合があります\n3. 十分な視聴時間とデータが必要です\n4. 地域によっては利用できない場合があります")
             .setWrap(true)
             .setBackground("#FFF3E0");
           currentRow += 2;
