@@ -36,11 +36,21 @@ function getClaudeApiKey() {
   
   // APIキーが設定されていない場合のエラー
   const ui = SpreadsheetApp.getUi();
-  ui.alert(
-    'システムエラー', 
-    'Claude APIキーが設定されていません。\n管理者にお問い合わせください。', 
-    ui.ButtonSet.OK
+  const response = ui.alert(
+    'Claude APIキー未設定', 
+    'Claude APIキーが設定されていません。\n\n' +
+    '「YouTube分析」メニューから「🤖 Claude APIキー設定」を実行してAPIキーを設定してください。\n\n' +
+    '今すぐ設定しますか？', 
+    ui.ButtonSet.YES_NO
   );
+  
+  if (response === ui.Button.YES) {
+    setupClaudeApiKey();
+    // 設定後に再度取得を試行
+    const newApiKey = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
+    return newApiKey;
+  }
+  
   return null;
 }
 
@@ -72,9 +82,10 @@ function onOpen() {
 function createImprovedUserInterface() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu("YouTube分析")
-    .addItem("⚙️ APIキー設定", "setupApiKey")
+    .addItem("⚙️ YouTube APIキー設定", "setupApiKey")
+    .addItem("🤖 Claude APIキー設定", "setupClaudeApiKey")
     .addItem("🔑 OAuth認証再設定", "setupOAuth")
-    .addItem("✅ 認証完了", "completeAuthentication")
+    .addItem("✅認証完了", "completeAuthentication")
     .addItem("🔍 認証状態テスト", "testOAuthStatus")
     .addItem("🔍 OAuth状態デバッグ", "debugOAuthStatus")
     .addSeparator()
@@ -1010,6 +1021,48 @@ function completeAuthentication() {
   const webAppUrl = getWebAppUrl();
   
   completeOAuthProcess(clientId, clientSecret, webAppUrl);
+}
+
+/**
+ * Claude APIキーの設定
+ */
+function setupClaudeApiKey() {
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.prompt(
+    "Claude API キーの設定",
+    "Anthropic Claude APIキーを入力してください:\n\n" +
+      "※Anthropic Consoleでアカウントを作成し、APIキーを取得してください。\n" +
+      "APIキーは「sk-ant-api03-」で始まります。",
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() == ui.Button.OK) {
+    const apiKey = response.getResponseText().trim();
+
+    // APIキーの形式を簡易チェック
+    if (!apiKey.startsWith('sk-ant-api03-') || apiKey.length < 50) {
+      ui.alert(
+        "エラー",
+        "Claude APIキーの形式が正しくないようです。\n" +
+        "正しいAPIキーは「sk-ant-api03-」で始まります。",
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+
+    // APIキーを保存
+    PropertiesService.getScriptProperties().setProperty("CLAUDE_API_KEY", apiKey);
+
+    ui.alert(
+      "成功",
+      "Claude APIキーが正常に設定されました。\n" +
+      "これでClaude AI分析機能を使用できます。",
+      ui.ButtonSet.OK
+    );
+
+    // API状態表示を更新
+    updateAPIStatus();
+  }
 }
 
 /**
@@ -4888,7 +4941,7 @@ function getRecentVideoComments(channelId, apiKey) {
           const commentsResponse = UrlFetchApp.fetch(commentsUrl);
           const commentsData = JSON.parse(commentsResponse.getContentText());
 
-          if (commentsData.items) {
+          if (commentsData.items && Array.isArray(commentsData.items)) {
             commentsData.items.forEach(item => {
               if (allComments.length < maxTotalComments) {
                 const comment = item.snippet.topLevelComment.snippet;
@@ -4947,24 +5000,25 @@ function analyzeSentiments(comments) {
     "frustrated", "angry", "mad", "upset", "problem", "issue", "error", "bug", "broken", "fail"
   ];
 
-  comments.forEach(comment => {
-    const text = comment.text.toLowerCase();
-    let positiveScore = 0;
-    let negativeScore = 0;
+  if (comments && Array.isArray(comments)) {
+    comments.forEach(comment => {
+      const text = comment.text.toLowerCase();
+      let positiveScore = 0;
+      let negativeScore = 0;
 
-    // ポジティブキーワードをチェック
-    positiveKeywords.forEach(keyword => {
-      if (text.includes(keyword.toLowerCase())) {
-        positiveScore++;
-      }
-    });
+      // ポジティブキーワードをチェック
+      positiveKeywords.forEach(keyword => {
+        if (text.includes(keyword.toLowerCase())) {
+          positiveScore++;
+        }
+      });
 
-    // ネガティブキーワードをチェック
-    negativeKeywords.forEach(keyword => {
-      if (text.includes(keyword.toLowerCase())) {
-        negativeScore++;
-      }
-    });
+      // ネガティブキーワードをチェック
+      negativeKeywords.forEach(keyword => {
+        if (text.includes(keyword.toLowerCase())) {
+          negativeScore++;
+        }
+      });
 
     // 感情を判定
     let sentiment;
@@ -4979,13 +5033,14 @@ function analyzeSentiments(comments) {
       sentimentResults.neutral++;
     }
 
-    sentimentResults.details.push({
-      ...comment,
-      sentiment: sentiment,
-      positiveScore: positiveScore,
-      negativeScore: negativeScore
+      sentimentResults.details.push({
+        ...comment,
+        sentiment: sentiment,
+        positiveScore: positiveScore,
+        negativeScore: negativeScore
+      });
     });
-  });
+  }
 
   return sentimentResults;
 }
@@ -5074,7 +5129,8 @@ function displaySentimentResults(sheet, results, comments) {
 
   // コメント詳細を表示（最大50件）
   const displayComments = results.details.slice(0, 50);
-  displayComments.forEach(comment => {
+  if (displayComments && Array.isArray(displayComments)) {
+    displayComments.forEach(comment => {
     const sentimentText = comment.sentiment === "positive" ? "ポジティブ" :
                          comment.sentiment === "negative" ? "ネガティブ" : "ニュートラル";
     const sentimentColor = comment.sentiment === "positive" ? "#4CAF50" :
@@ -5084,10 +5140,11 @@ function displaySentimentResults(sheet, results, comments) {
     sheet.getRange(`B${currentRow}`).setValue(comment.text.substring(0, 100) + "...");
     sheet.getRange(`C${currentRow}`).setValue(comment.author);
     sheet.getRange(`D${currentRow}`).setValue(sentimentText).setFontColor(sentimentColor);
-    sheet.getRange(`E${currentRow}`).setValue(comment.likeCount);
-    sheet.getRange(`F${currentRow}`).setValue(new Date(comment.publishedAt));
-    currentRow++;
-  });
+      sheet.getRange(`E${currentRow}`).setValue(comment.likeCount);
+      sheet.getRange(`F${currentRow}`).setValue(new Date(comment.publishedAt));
+      currentRow++;
+    });
+  }
 
   // 列幅の調整
   sheet.setColumnWidth(1, 200);
@@ -8822,9 +8879,22 @@ function runClaudeAnalysis() {
     
     if (!analysisResult) {
       closeProgressDialog();
+      
+      // APIキーが設定されていない場合の特別な処理
+      const apiKey = getClaudeApiKey();
+      if (!apiKey) {
+        // getClaudeApiKey内で既に設定ダイアログが表示されるので、ここでは何もしない
+        return;
+      }
+      
       ui.alert(
         'AI分析エラー',
-        'Claude AI分析中にエラーが発生しました。\n時間をおいて再度お試しください。',
+        'Claude AI分析中にエラーが発生しました。\n\n' +
+        '考えられる原因：\n' +
+        '• APIキーが無効または期限切れ\n' +
+        '• ネットワーク接続の問題\n' +
+        '• API使用制限に達している\n\n' +
+        'APIキーを確認して、時間をおいて再度お試しください。',
         ui.ButtonSet.OK
       );
       return;
@@ -9015,7 +9085,7 @@ function createComprehensiveAnalysisPrompt(channelData) {
 `;
 
   // 詳細データがある場合は追加
-  if (detailed.videos && detailed.videos.length > 0) {
+  if (detailed.videos && Array.isArray(detailed.videos) && detailed.videos.length > 0) {
     prompt += `# 動画パフォーマンス（上位10本）\n`;
     detailed.videos.forEach((video, index) => {
       if (video[0]) {
@@ -9027,13 +9097,13 @@ function createComprehensiveAnalysisPrompt(channelData) {
   
   if (detailed.audience) {
     prompt += `# 視聴者属性\n`;
-    if (detailed.audience.gender && detailed.audience.gender.length > 0) {
+    if (detailed.audience.gender && Array.isArray(detailed.audience.gender) && detailed.audience.gender.length > 0) {
       prompt += `## 性別分布\n`;
       detailed.audience.gender.forEach(row => {
         if (row[0]) prompt += `- ${row[0]}: ${row[1]}%\n`;
       });
     }
-    if (detailed.audience.age && detailed.audience.age.length > 0) {
+    if (detailed.audience.age && Array.isArray(detailed.audience.age) && detailed.audience.age.length > 0) {
       prompt += `## 年齢分布\n`;
       detailed.audience.age.forEach(row => {
         if (row[0]) prompt += `- ${row[0]}: ${row[1]}%\n`;
@@ -9042,7 +9112,7 @@ function createComprehensiveAnalysisPrompt(channelData) {
     prompt += '\n';
   }
   
-  if (detailed.traffic && detailed.traffic.length > 0) {
+  if (detailed.traffic && Array.isArray(detailed.traffic) && detailed.traffic.length > 0) {
     prompt += `# トラフィックソース\n`;
     detailed.traffic.forEach((source, index) => {
       if (source[0]) {
@@ -9052,7 +9122,7 @@ function createComprehensiveAnalysisPrompt(channelData) {
     prompt += '\n';
   }
   
-  if (detailed.sentiment && detailed.sentiment.length > 0) {
+  if (detailed.sentiment && Array.isArray(detailed.sentiment) && detailed.sentiment.length > 0) {
     prompt += `# コメント感情分析\n`;
     detailed.sentiment.forEach(row => {
       if (row[0]) prompt += `- ${row[0]}: ${row[1]}\n`;

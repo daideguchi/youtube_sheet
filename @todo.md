@@ -38,6 +38,19 @@
   - プル操作は正常に動作（Already up to date）
   - 実行ログエラーは Apps Script 環境の問題と判明
   - Git 操作自体に問題なし
+- [x] Claude API キー設定エラーの修正（2024 年 12 月）
+  - setupClaudeApiKey 関数を新規実装
+  - メニューに「🤖 Claude API キー設定」を追加
+  - getClaudeApiKey 関数のエラーハンドリング改善
+  - API キー未設定時に設定ダイアログを自動表示
+  - runClaudeAnalysis 関数のエラー処理強化
+  - PropertiesService での API キー保存機能実装
+- [x] forEach TypeError の修正（2024 年 12 月）
+  - 全ての forEach メソッド使用箇所に Array.isArray チェックを追加
+  - commentsData.items、comments、displayComments の配列検証を実装
+  - Claude AI 分析の detailed.videos、detailed.audience.gender、detailed.audience.age、detailed.traffic、detailed.sentiment の配列検証を追加
+  - 「Cannot read properties of undefined (reading 'forEach')」エラーを完全解決
+  - API レスポンスデータの安全な処理を実現
 
 ### 🟡 重要
 
