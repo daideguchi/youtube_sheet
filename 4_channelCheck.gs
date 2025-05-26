@@ -17,14 +17,14 @@ const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 
 // 事前設定されたAPIキー（配布用）
 // 実際の配布時にはここにAPIキーを設定してください
-const CLAUDE_API_KEY = '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';
+const CLAUDE_API_KEY = 'YOUR_CLAUDE_API_KEY_HERE';
 
 /**
  * Claude APIキーを取得（事前設定済み）
  */
 function getClaudeApiKey() {
   // 事前設定されたAPIキーを使用
-  if (CLAUDE_API_KEY && CLAUDE_API_KEY !== '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') {
+  if (CLAUDE_API_KEY && CLAUDE_API_KEY !== 'YOUR_CLAUDE_API_KEY_HERE') {
     return CLAUDE_API_KEY;
   }
   
