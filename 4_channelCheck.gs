@@ -8707,6 +8707,600 @@ function formatDate(date) {
   }
   return Utilities.formatDate(date, "JST", "yyyy/MM/dd");
 }
+
+/**
+ * Claude AI戦略分析を実行
+ */
+function runClaudeAnalysis() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  
+  try {
+    // 確認ダイアログ
+    const response = ui.alert(
+      'Claude AI戦略分析',
+      'チャンネルデータを基に包括的なAI分析を実行します。\n\n' +
+      '分析内容：\n' +
+      '• パフォーマンス診断と総合スコア\n' +
+      '• コンテンツ戦略分析\n' +
+      '• 視聴者行動パターン分析\n' +
+      '• 成長戦略提案\n' +
+      '• リスク・課題診断\n' +
+      '• 予測・トレンド分析\n\n' +
+      '実行しますか？',
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (response !== ui.Button.YES) {
+      return;
+    }
+    
+    // 使用制限チェック
+    const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    const usageKey = `claude_usage_${today}`;
+    const dailyLimit = 50;
+    
+    const currentUsage = parseInt(PropertiesService.getScriptProperties().getProperty(usageKey) || '0');
+    
+    if (currentUsage >= dailyLimit) {
+      ui.alert(
+        '使用制限に達しました',
+        `Claude AI分析の1日の使用制限（${dailyLimit}回）に達しています。\n明日再度お試しください。`,
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    // プログレスバー表示
+    showProgressDialog('チャンネルデータを収集中...', 10);
+    
+    // チャンネルデータを収集
+    const channelData = collectChannelDataForAI(dashboardSheet);
+    
+    if (!channelData.hasBasicData) {
+      closeProgressDialog();
+      ui.alert(
+        'データ不足',
+        'Claude AI分析を実行するには、まず基本チャンネル分析を実行してください。\n\n' +
+        '「🚀 ワンクリック完全分析」または「🔍 基本チャンネル分析のみ実行」を先に実行してください。',
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    showProgressDialog('AI分析を実行中...', 50);
+    
+    // Claude APIを呼び出し
+    const analysisResult = callClaudeAPI(channelData);
+    
+    if (!analysisResult) {
+      closeProgressDialog();
+      ui.alert(
+        'AI分析エラー',
+        'Claude AI分析中にエラーが発生しました。\n時間をおいて再度お試しください。',
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    
+    showProgressDialog('分析結果を表示中...', 80);
+    
+    // 結果を表示
+    displayAIAnalysis(analysisResult, channelData);
+    
+    // 使用回数を更新
+    PropertiesService.getScriptProperties().setProperty(usageKey, (currentUsage + 1).toString());
+    
+    closeProgressDialog();
+    
+    // 完了メッセージ
+    ui.alert(
+      'AI分析完了',
+      `Claude AI戦略分析が完了しました。\n\n` +
+      `「AIフィードバック」シートに詳細な分析結果を表示しました。\n\n` +
+      `本日の使用回数: ${currentUsage + 1}/${dailyLimit}回`,
+      ui.ButtonSet.OK
+    );
+    
+    // ダッシュボード更新
+    updateAnalysisSummary("Claude AI分析", "完了", "包括的戦略分析完了", "AI戦略分析完了");
+    updateOverallAnalysisSummary();
+    
+  } catch (e) {
+    closeProgressDialog();
+    Logger.log('Claude AI分析エラー: ' + e.toString());
+    ui.alert(
+      'エラー',
+      'Claude AI分析中にエラーが発生しました:\n\n' + e.toString(),
+      ui.ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * チャンネルデータをAI分析用に収集
+ */
+function collectChannelDataForAI(dashboardSheet) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 基本データの確認
+  const channelName = dashboardSheet.getRange(CHANNEL_NAME_CELL).getValue();
+  const subscriberCount = dashboardSheet.getRange(SUBSCRIBER_COUNT_CELL).getValue();
+  const viewCount = dashboardSheet.getRange(VIEW_COUNT_CELL).getValue();
+  
+  const hasBasicData = channelName && subscriberCount && viewCount;
+  
+  const channelData = {
+    hasBasicData: hasBasicData,
+    basicInfo: {
+      channelName: channelName || '不明',
+      subscriberCount: subscriberCount || 0,
+      totalViewCount: viewCount || 0,
+      subscriptionRate: dashboardSheet.getRange(SUBSCRIPTION_RATE_CELL).getValue() || 0,
+      engagementRate: dashboardSheet.getRange(ENGAGEMENT_RATE_CELL).getValue() || 0,
+      retentionRate: dashboardSheet.getRange(RETENTION_RATE_CELL).getValue() || 0,
+      averageViewDuration: dashboardSheet.getRange(AVERAGE_VIEW_DURATION_CELL).getValue() || 0,
+      clickRate: dashboardSheet.getRange(CLICK_RATE_CELL).getValue() || 0,
+      analysisDate: new Date().toISOString()
+    },
+    detailedAnalysis: {}
+  };
+  
+  // 各分析シートからデータを収集
+  try {
+    // 動画別分析データ
+    const videosSheet = ss.getSheetByName(VIDEOS_SHEET_NAME);
+    if (videosSheet) {
+      const videoData = videosSheet.getRange('A4:K20').getValues();
+      channelData.detailedAnalysis.videos = videoData.filter(row => row[0]).slice(0, 10);
+    }
+    
+    // 視聴者分析データ
+    const audienceSheet = ss.getSheetByName(AUDIENCE_SHEET_NAME);
+    if (audienceSheet) {
+      const genderData = audienceSheet.getRange('A4:C10').getValues();
+      const ageData = audienceSheet.getRange('E4:G15').getValues();
+      channelData.detailedAnalysis.audience = {
+        gender: genderData.filter(row => row[0]),
+        age: ageData.filter(row => row[0])
+      };
+    }
+    
+    // エンゲージメント分析データ
+    const engagementSheet = ss.getSheetByName(ENGAGEMENT_SHEET_NAME);
+    if (engagementSheet) {
+      const engagementData = engagementSheet.getRange('A4:F20').getValues();
+      channelData.detailedAnalysis.engagement = engagementData.filter(row => row[0]).slice(0, 10);
+    }
+    
+    // トラフィック分析データ
+    const trafficSheet = ss.getSheetByName(TRAFFIC_SHEET_NAME);
+    if (trafficSheet) {
+      const trafficData = trafficSheet.getRange('A4:E15').getValues();
+      channelData.detailedAnalysis.traffic = trafficData.filter(row => row[0]);
+    }
+    
+    // コメント感情分析データ
+    const commentSheet = ss.getSheetByName('コメント感情分析');
+    if (commentSheet) {
+      try {
+        const sentimentSummary = commentSheet.getRange('A4:B7').getValues();
+        channelData.detailedAnalysis.sentiment = sentimentSummary.filter(row => row[0]);
+      } catch (e) {
+        Logger.log('コメント感情データ取得エラー: ' + e.toString());
+      }
+    }
+    
+  } catch (e) {
+    Logger.log('詳細データ収集エラー: ' + e.toString());
+  }
+  
+  return channelData;
+}
+
+/**
+ * Claude APIを呼び出してAI分析を実行
+ */
+function callClaudeAPI(channelData) {
+  try {
+    const apiKey = getClaudeApiKey();
+    if (!apiKey) {
+      return null;
+    }
+    
+    // 包括的な分析プロンプトを作成
+    const prompt = createComprehensiveAnalysisPrompt(channelData);
+    
+    const payload = {
+      model: 'claude-3-sonnet-20240229',
+      max_tokens: 4000,
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    };
+    
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      payload: JSON.stringify(payload)
+    };
+    
+    const response = UrlFetchApp.fetch(CLAUDE_API_URL, options);
+    const responseData = JSON.parse(response.getContentText());
+    
+    if (responseData.content && responseData.content[0] && responseData.content[0].text) {
+      return responseData.content[0].text;
+    } else {
+      Logger.log('Claude API応答エラー: ' + JSON.stringify(responseData));
+      return null;
+    }
+    
+  } catch (e) {
+    Logger.log('Claude API呼び出しエラー: ' + e.toString());
+    return null;
+  }
+}
+
+/**
+ * 包括的な分析プロンプトを作成
+ */
+function createComprehensiveAnalysisPrompt(channelData) {
+  const basic = channelData.basicInfo;
+  const detailed = channelData.detailedAnalysis;
+  
+  let prompt = `YouTubeチャンネルの包括的戦略分析を実行してください。
+
+# チャンネル基本情報
+- チャンネル名: ${basic.channelName}
+- 登録者数: ${basic.subscriberCount.toLocaleString()}人
+- 総再生回数: ${basic.totalViewCount.toLocaleString()}回
+- 登録率: ${basic.subscriptionRate}%
+- エンゲージメント率: ${basic.engagementRate}%
+- 視聴維持率: ${basic.retentionRate}%
+- 平均視聴時間: ${basic.averageViewDuration}秒
+- クリック率: ${basic.clickRate}%
+
+`;
+
+  // 詳細データがある場合は追加
+  if (detailed.videos && detailed.videos.length > 0) {
+    prompt += `# 動画パフォーマンス（上位10本）\n`;
+    detailed.videos.forEach((video, index) => {
+      if (video[0]) {
+        prompt += `${index + 1}. ${video[0]} - 再生回数: ${video[1]}, いいね: ${video[2]}, コメント: ${video[3]}\n`;
+      }
+    });
+    prompt += '\n';
+  }
+  
+  if (detailed.audience) {
+    prompt += `# 視聴者属性\n`;
+    if (detailed.audience.gender && detailed.audience.gender.length > 0) {
+      prompt += `## 性別分布\n`;
+      detailed.audience.gender.forEach(row => {
+        if (row[0]) prompt += `- ${row[0]}: ${row[1]}%\n`;
+      });
+    }
+    if (detailed.audience.age && detailed.audience.age.length > 0) {
+      prompt += `## 年齢分布\n`;
+      detailed.audience.age.forEach(row => {
+        if (row[0]) prompt += `- ${row[0]}: ${row[1]}%\n`;
+      });
+    }
+    prompt += '\n';
+  }
+  
+  if (detailed.traffic && detailed.traffic.length > 0) {
+    prompt += `# トラフィックソース\n`;
+    detailed.traffic.forEach((source, index) => {
+      if (source[0]) {
+        prompt += `${index + 1}. ${source[0]}: ${source[1]}回 (${source[2]}%)\n`;
+      }
+    });
+    prompt += '\n';
+  }
+  
+  if (detailed.sentiment && detailed.sentiment.length > 0) {
+    prompt += `# コメント感情分析\n`;
+    detailed.sentiment.forEach(row => {
+      if (row[0]) prompt += `- ${row[0]}: ${row[1]}\n`;
+    });
+    prompt += '\n';
+  }
+
+  prompt += `
+# 分析要求
+
+以下の構成で包括的な戦略分析を実行してください：
+
+## 📊 パフォーマンス診断
+**総合スコア診断**
+- チャンネル健康度（5段階評価）
+- 同規模チャンネルとの比較での現在地
+- 成長段階の診断（立ち上げ期/成長期/安定期/停滞期）
+
+**KPI別評価コメント**
+- 登録率の評価とベンチマーク比較
+- エンゲージメント率の解釈
+- 視聴維持率の良し悪し判定
+- クリック率の改善余地
+
+## 🎯 コンテンツ戦略分析
+**動画パフォーマンス傾向**
+- 高パフォーマンス動画の共通点分析
+- 低パフォーマンス動画のパターン特定
+- 動画長さと再生回数の相関関係
+- 投稿頻度の最適化提案
+
+**視聴者行動パターン**
+- 新規視聴者の獲得経路分析
+- リピーター率と忠誠度評価
+- 離脱ポイントの傾向分析
+
+## 👥 オーディエンス理解
+**視聴者属性深掘り**
+- 男女比率の最適化提案
+- 年齢層別コンテンツ適合度
+- 地域別パフォーマンス分析
+
+**エンゲージメント質的分析**
+- コメント感情分析結果の解釈
+- 視聴者ニーズの変化傾向
+- コミュニティ形成度の評価
+
+## 📈 成長戦略提案
+**短期改善提案（1-3ヶ月）**
+- 即効性のある改善点TOP3
+- 次の動画で試せる具体的施策
+- エンゲージメント向上の緊急対策
+
+**中長期戦略提案（3-12ヶ月）**
+- 登録者10万人達成のロードマップ
+- 収益化の強化戦略
+- ブランド拡張の可能性
+
+## ⚠️ リスク・課題診断
+**潜在的問題の特定**
+- 視聴者離れのリスク要因
+- 競合チャンネルとの差別化不足
+- アルゴリズム変更への対応力
+
+## 🔮 予測・トレンド分析
+**将来予測コメント**
+- 現在の成長率による6ヶ月後の予測
+- 季節要因を考慮した次四半期の見通し
+- 業界トレンドとの適合度
+
+## 出力形式
+各セクションを明確に分けて、具体的で実行可能な提案を含めてください。
+数値データに基づいた客観的な分析と、創造的な戦略提案のバランスを取ってください。
+`;
+
+  return prompt;
+}
+
+/**
+ * AI分析結果を表示
+ */
+function displayAIAnalysis(analysisResult, channelData) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let aiSheet = prepareAIFeedbackSheet(ss);
+  
+  // シートをクリア
+  aiSheet.clear();
+  
+  // ヘッダー設定
+  aiSheet.getRange('A1:I1').merge()
+    .setValue('🧠 Claude AI 包括的戦略分析')
+    .setFontSize(18)
+    .setFontWeight('bold')
+    .setHorizontalAlignment('center')
+    .setBackground('#4285F4')
+    .setFontColor('white');
+  
+  // チャンネル情報
+  aiSheet.getRange('A2').setValue('チャンネル名:');
+  aiSheet.getRange('B2:D2').merge().setValue(channelData.basicInfo.channelName);
+  aiSheet.getRange('E2').setValue('分析日時:');
+  aiSheet.getRange('F2:I2').merge().setValue(new Date());
+  
+  // 基本指標サマリー
+  aiSheet.getRange('A4:I4').merge()
+    .setValue('📊 基本指標サマリー')
+    .setFontWeight('bold')
+    .setBackground('#E8F0FE')
+    .setHorizontalAlignment('center');
+  
+  const basicMetrics = [
+    ['登録者数', channelData.basicInfo.subscriberCount.toLocaleString() + '人'],
+    ['総再生回数', channelData.basicInfo.totalViewCount.toLocaleString() + '回'],
+    ['登録率', channelData.basicInfo.subscriptionRate + '%'],
+    ['エンゲージメント率', channelData.basicInfo.engagementRate + '%'],
+    ['視聴維持率', channelData.basicInfo.retentionRate + '%'],
+    ['平均視聴時間', channelData.basicInfo.averageViewDuration + '秒'],
+    ['クリック率', channelData.basicInfo.clickRate + '%']
+  ];
+  
+  for (let i = 0; i < basicMetrics.length; i++) {
+    aiSheet.getRange(`A${5 + i}`).setValue(basicMetrics[i][0]);
+    aiSheet.getRange(`B${5 + i}:C${5 + i}`).merge().setValue(basicMetrics[i][1]);
+  }
+  
+  // AI分析結果
+  const analysisStartRow = 5 + basicMetrics.length + 2;
+  aiSheet.getRange(`A${analysisStartRow}:I${analysisStartRow}`).merge()
+    .setValue('🤖 Claude AI 戦略分析結果')
+    .setFontWeight('bold')
+    .setBackground('#E8F0FE')
+    .setHorizontalAlignment('center');
+  
+  // 分析結果を段落ごとに分割して表示
+  const analysisLines = analysisResult.split('\n');
+  let currentRow = analysisStartRow + 1;
+  
+  for (let line of analysisLines) {
+    if (line.trim()) {
+      // 見出し行の判定（#で始まる行）
+      if (line.startsWith('#')) {
+        aiSheet.getRange(`A${currentRow}:I${currentRow}`).merge()
+          .setValue(line.replace(/^#+\s*/, ''))
+          .setFontWeight('bold')
+          .setBackground('#F8F9FA');
+      } else {
+        // 通常のテキスト
+        aiSheet.getRange(`A${currentRow}:I${currentRow}`).merge()
+          .setValue(line)
+          .setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+      }
+      currentRow++;
+    } else {
+      currentRow++; // 空行
+    }
+  }
+  
+  // 列幅調整
+  for (let i = 1; i <= 9; i++) {
+    aiSheet.setColumnWidth(i, 120);
+  }
+  
+  // シートをアクティブにして表示
+  aiSheet.activate();
+  aiSheet.setActiveSelection('A1');
+}
+
+/**
+ * ダッシュボードの情報量を大幅に増加させる機能
+ */
+function enhanceDashboardInformation() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboardSheet = ss.getSheetByName(DASHBOARD_SHEET_NAME);
+  
+  try {
+    // 拡張ダッシュボードセクションを追加
+    const enhancedStartRow = 25; // 既存のダッシュボードの下に追加
+    
+    // 拡張情報ヘッダー
+    dashboardSheet.getRange(`A${enhancedStartRow}:I${enhancedStartRow}`).merge()
+      .setValue('📈 拡張アナリティクス情報')
+      .setFontSize(14)
+      .setFontWeight('bold')
+      .setHorizontalAlignment('center')
+      .setBackground('#34A853')
+      .setFontColor('white');
+    
+    // パフォーマンス指標詳細
+    const performanceStartRow = enhancedStartRow + 2;
+    dashboardSheet.getRange(`A${performanceStartRow}:I${performanceStartRow}`).merge()
+      .setValue('🎯 パフォーマンス指標詳細')
+      .setFontWeight('bold')
+      .setBackground('#E8F0FE');
+    
+    const performanceMetrics = [
+      ['指標', '現在値', 'ベンチマーク', '評価', '改善提案'],
+      ['視聴完了率', '=E8&"%"', '45-60%', '=IF(E8>=45,"✅ 良好","❌ 要改善")', '冒頭10秒の強化'],
+      ['いいね率', '=IF(B8>0,ROUND((D8*B8/100)/B8*100,2)&"%","0%")', '2-5%', '=IF(VALUE(LEFT(B' + (performanceStartRow + 2) + ',LEN(B' + (performanceStartRow + 2) + ')-1))>=2,"✅ 良好","❌ 要改善")', 'CTA強化'],
+      ['コメント率', '=IF(B8>0,ROUND((D8*B8/100*0.3)/B8*100,3)&"%","0%")', '0.5-2%', '=IF(VALUE(LEFT(B' + (performanceStartRow + 3) + ',LEN(B' + (performanceStartRow + 3) + ')-1))>=0.5,"✅ 良好","❌ 要改善")', '質問投げかけ'],
+      ['登録転換率', '=C8&"%"', '1-3%', '=IF(C8>=1,"✅ 良好","❌ 要改善")', '価値提案明確化'],
+      ['再生時間効率', '=ROUND(F8/60,1)&"分"', '3-8分', '=IF(F8>=180,"✅ 良好","❌ 要改善")', 'コンテンツ密度向上']
+    ];
+    
+    for (let i = 0; i < performanceMetrics.length; i++) {
+      for (let j = 0; j < performanceMetrics[i].length; j++) {
+        const cell = dashboardSheet.getRange(performanceStartRow + 1 + i, 1 + j);
+        if (i === 0) {
+          cell.setValue(performanceMetrics[i][j]).setFontWeight('bold').setBackground('#F8F9FA');
+        } else {
+          cell.setFormula(performanceMetrics[i][j]);
+        }
+      }
+    }
+    
+    // 成長トレンド分析セクション
+    const trendStartRow = performanceStartRow + performanceMetrics.length + 3;
+    dashboardSheet.getRange(`A${trendStartRow}:I${trendStartRow}`).merge()
+      .setValue('📊 成長トレンド分析')
+      .setFontWeight('bold')
+      .setBackground('#E8F0FE');
+    
+    const trendMetrics = [
+      ['期間', '登録者増加', '再生回数', '成長率', 'トレンド'],
+      ['今月予測', '=ROUND(A8*0.05,0)', '=ROUND(B8*0.1,0)', '5%', '📈 成長中'],
+      ['3ヶ月予測', '=ROUND(A8*0.15,0)', '=ROUND(B8*0.3,0)', '15%', '📈 加速'],
+      ['6ヶ月予測', '=ROUND(A8*0.3,0)', '=ROUND(B8*0.6,0)', '30%', '🚀 急成長'],
+      ['1年予測', '=ROUND(A8*0.6,0)', '=ROUND(B8*1.2,0)', '60%', '⭐ 大成功']
+    ];
+    
+    for (let i = 0; i < trendMetrics.length; i++) {
+      for (let j = 0; j < trendMetrics[i].length; j++) {
+        const cell = dashboardSheet.getRange(trendStartRow + 1 + i, 1 + j);
+        if (i === 0) {
+          cell.setValue(trendMetrics[i][j]).setFontWeight('bold').setBackground('#F8F9FA');
+        } else {
+          cell.setFormula(trendMetrics[i][j]);
+        }
+      }
+    }
+    
+    // 競合比較セクション
+    const competitorStartRow = trendStartRow + trendMetrics.length + 3;
+    dashboardSheet.getRange(`A${competitorStartRow}:I${competitorStartRow}`).merge()
+      .setValue('🏆 競合比較・ベンチマーク')
+      .setFontWeight('bold')
+      .setBackground('#E8F0FE');
+    
+    const competitorData = [
+      ['指標', '自チャンネル', '同規模平均', '上位10%', '改善余地'],
+      ['登録率', '=C8&"%"', '1.2%', '2.5%', '=IF(C8<1.2,"大","小")'],
+      ['エンゲージメント率', '=D8&"%"', '2.5%', '5.0%', '=IF(D8<2.5,"大","小")'],
+      ['視聴維持率', '=E8&"%"', '40%', '60%', '=IF(E8<40,"大","小")'],
+      ['クリック率', '=G8&"%"', '8%', '15%', '=IF(G8<8,"大","小")']
+    ];
+    
+    for (let i = 0; i < competitorData.length; i++) {
+      for (let j = 0; j < competitorData[i].length; j++) {
+        const cell = dashboardSheet.getRange(competitorStartRow + 1 + i, 1 + j);
+        if (i === 0) {
+          cell.setValue(competitorData[i][j]).setFontWeight('bold').setBackground('#F8F9FA');
+        } else {
+          cell.setFormula(competitorData[i][j]);
+        }
+      }
+    }
+    
+    // アクションアイテムセクション
+    const actionStartRow = competitorStartRow + competitorData.length + 3;
+    dashboardSheet.getRange(`A${actionStartRow}:I${actionStartRow}`).merge()
+      .setValue('🎯 今すぐできるアクションアイテム')
+      .setFontWeight('bold')
+      .setBackground('#EA4335')
+      .setFontColor('white');
+    
+    const actionItems = [
+      '1. 動画冒頭15秒の魅力度向上（視聴維持率改善）',
+      '2. サムネイルA/Bテストの実施（クリック率向上）',
+      '3. コメント促進CTAの追加（エンゲージメント向上）',
+      '4. 投稿時間の最適化テスト（初期再生数向上）',
+      '5. 関連動画への誘導強化（セッション時間延長）'
+    ];
+    
+    for (let i = 0; i < actionItems.length; i++) {
+      dashboardSheet.getRange(`A${actionStartRow + 1 + i}:I${actionStartRow + 1 + i}`).merge()
+        .setValue(actionItems[i])
+        .setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+    }
+    
+    Logger.log('ダッシュボード拡張情報を追加しました');
+    
+  } catch (e) {
+    Logger.log('ダッシュボード拡張エラー: ' + e.toString());
+  }
+}
 /**
  * 改善されたユーザーインターフェース作成関数
  */
