@@ -3518,17 +3518,29 @@ function analyzeAudience(silentMode = false) {
     let audienceSheet = ss.getSheetByName(AUDIENCE_SHEET_NAME);
     if (audienceSheet) {
       // 既存のシートがある場合はクリアし、既存のグラフをすべて削除
-      const charts = audienceSheet.getCharts();
-      for (let i = 0; i < charts.length; i++) {
-        audienceSheet.removeChart(charts[i]);
+      try {
+        const charts = audienceSheet.getCharts();
+        for (let i = 0; i < charts.length; i++) {
+          audienceSheet.removeChart(charts[i]);
+        }
+        audienceSheet.clear();
+      } catch (clearError) {
+        Logger.log(`Sheet clear error: ${clearError.toString()}`);
+        // クリアに失敗した場合は新しいシートを作成
+        try {
+          ss.deleteSheet(audienceSheet);
+        } catch (deleteError) {
+          Logger.log(`Sheet delete error: ${deleteError.toString()}`);
+        }
+        audienceSheet = ss.insertSheet(AUDIENCE_SHEET_NAME);
       }
-      audienceSheet.clear();
     } else {
       // 新しいシートを作成
       audienceSheet = ss.insertSheet(AUDIENCE_SHEET_NAME);
-      if (!audienceSheet) {
-        throw new Error("視聴者分析シートの作成に失敗しました。");
-      }
+    }
+    
+    if (!audienceSheet) {
+      throw new Error("視聴者分析シートの作成に失敗しました。");
     }
 
     // 以降のすべての処理でaudienceSheetのみを使用
@@ -3808,6 +3820,12 @@ function analyzeAudience(silentMode = false) {
     }
 
     let currentRow = 4;
+    
+    // currentRowの値を検証
+    if (typeof currentRow !== 'number' || currentRow < 1 || currentRow > 1000000) {
+      Logger.log(`Invalid currentRow value: ${currentRow}, resetting to 4`);
+      currentRow = 4;
+    }
 
     // 1. 地域別データのセクション
     audienceSheet
@@ -4426,6 +4444,12 @@ function analyzeAudience(silentMode = false) {
     }
 
     // 4. 曜日別視聴傾向データ（時間帯データの代替）
+    // currentRowの値を再検証
+    if (typeof currentRow !== 'number' || currentRow < 1 || currentRow > 1000000) {
+      Logger.log(`Invalid currentRow value before hourly data: ${currentRow}, resetting to safe value`);
+      currentRow = 50; // 安全な値に設定
+    }
+    
     audienceSheet
       .getRange(`A${currentRow}:H${currentRow}`)
       .merge()
@@ -4437,23 +4461,31 @@ function analyzeAudience(silentMode = false) {
 
     if (hourlyData.rows && hourlyData.rows.length > 0) {
       // 注意事項を表示
-      audienceSheet
-        .getRange(`A${currentRow}:H${currentRow}`)
-        .merge()
-        .setValue(
-          "注意：YouTube Analytics APIでは時間帯別データは取得できないため、代わりに曜日別の視聴傾向を分析しています。"
-        )
-        .setFontStyle("italic")
-        .setBackground("#FFF3CD");
-      currentRow++;
+      try {
+        audienceSheet
+          .getRange(`A${currentRow}:H${currentRow}`)
+          .merge()
+          .setValue(
+            "注意：YouTube Analytics APIでは時間帯別データは取得できないため、代わりに曜日別の視聴傾向を分析しています。"
+          )
+          .setFontStyle("italic")
+          .setBackground("#FFF3CD");
+        currentRow++;
 
-      // ヘッダー行
-      audienceSheet
-        .getRange(`A${currentRow}:B${currentRow}`)
-        .setValues([["曜日", "平均視聴回数"]])
-        .setFontWeight("bold")
-        .setBackground("#F8F9FA");
-      currentRow++;
+        // ヘッダー行
+        audienceSheet
+          .getRange(`A${currentRow}:B${currentRow}`)
+          .setValues([["曜日", "平均視聴回数"]])
+          .setFontWeight("bold")
+          .setBackground("#F8F9FA");
+        currentRow++;
+      } catch (rangeError) {
+        Logger.log(`Range error at currentRow ${currentRow}: ${rangeError.toString()}`);
+        // エラーが発生した場合は、安全な範囲で処理を続行
+        currentRow = Math.max(4, currentRow);
+        audienceSheet.getRange(`A${currentRow}`).setValue("曜日別視聴傾向データ（エラーのため簡易表示）");
+        currentRow++;
+      }
 
       // データを表示
       for (let i = 0; i < hourlyData.rows.length; i++) {
@@ -4504,6 +4536,12 @@ function analyzeAudience(silentMode = false) {
     }
 
     // 5. トラフィックソースデータ
+    // currentRowの値を再検証
+    if (typeof currentRow !== 'number' || currentRow < 1 || currentRow > 1000000) {
+      Logger.log(`Invalid currentRow value before traffic data: ${currentRow}, resetting to safe value`);
+      currentRow = 100; // 安全な値に設定
+    }
+    
     audienceSheet
       .getRange(`A${currentRow}:H${currentRow}`)
       .merge()
@@ -4515,12 +4553,20 @@ function analyzeAudience(silentMode = false) {
 
     if (trafficData.rows && trafficData.rows.length > 0) {
       // ヘッダー行
-      audienceSheet
-        .getRange(`A${currentRow}:B${currentRow}`)
-        .setValues([["トラフィックソース", "視聴回数"]])
-        .setFontWeight("bold")
-        .setBackground("#F8F9FA");
-      currentRow++;
+      try {
+        audienceSheet
+          .getRange(`A${currentRow}:B${currentRow}`)
+          .setValues([["トラフィックソース", "視聴回数"]])
+          .setFontWeight("bold")
+          .setBackground("#F8F9FA");
+        currentRow++;
+      } catch (rangeError) {
+        Logger.log(`Traffic data range error at currentRow ${currentRow}: ${rangeError.toString()}`);
+        // エラーが発生した場合は、安全な範囲で処理を続行
+        currentRow = Math.max(4, currentRow);
+        audienceSheet.getRange(`A${currentRow}`).setValue("トラフィックソースデータ（エラーのため簡易表示）");
+        currentRow++;
+      }
 
       // データを表示
       for (let i = 0; i < trafficData.rows.length; i++) {
